@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#070907">
+<link rel="manifest" href="manifest.json">
+<title>PKE Field Analyser v26 — Spectral Decay Trace Analyser</title>
+<style>
+:root{
+ --green:#74ff74;--yellow:#ffe45a;--red:#ff5147;--text:#d9e8d9;
+ --bg:#070907;--panel:#0b100b;--grid:rgba(180,220,180,.14);
+ --tech:"Courier New",Courier,monospace;
+ --ui:Eurostile,"Eurostile Extended","Microgramma","Arial Narrow",sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;background:#020302;color:var(--text);overflow:hidden}
+body{font-family:var(--tech);display:flex;justify-content:center}
+#app{width:min(100vw,430px);height:100dvh;min-height:650px;padding:12px 12px env(safe-area-inset-bottom) 12px;display:flex;flex-direction:column;gap:9px;background:var(--bg)}
+.header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #384138;padding:3px 2px 8px}
+.title{font:13px var(--ui);letter-spacing:1.5px}.status{font-size:10px}
+.readout{border:1px solid #485348;padding:8px;text-align:center;background:#090c09}
+.modeTitle{font:12px var(--ui);letter-spacing:1.7px}
+.number{font-size:32px;font-weight:bold;letter-spacing:3px;line-height:1.05;margin-top:3px}
+.readingState{font-size:9px;opacity:.65;margin-top:3px}.number{color:var(--green);transition:color .12s linear}.audioState{font-size:8px;opacity:.55;letter-spacing:1px;margin-top:2px}
+.analysis{position:relative;flex:1;min-height:0;background:#060806;border:1px solid #596259;overflow:hidden}
+.view{position:absolute;inset:0;display:none !important;padding:10px;visibility:hidden;pointer-events:none}
+.view.active{display:flex !important;visibility:visible;pointer-events:auto}
+.view:before{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px;pointer-events:none}
+.view>*{position:relative;z-index:1}
+
+/* SPD */
+.spd{color:var(--yellow);flex-direction:column;gap:8px}
+.spdPanel{flex:1;min-height:0;border:1px solid currentColor;padding:20px 7px 7px;position:relative}
+.panelLabel{position:absolute;left:7px;top:5px;font-size:9px;letter-spacing:1px}
+.barSet{height:100%;display:grid;grid-template-columns:repeat(16,1fr);gap:3px;align-items:end}
+.bar{height:5%;background:currentColor;transition:height .08s linear}
+.spdFooter{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.metric{border:1px solid currentColor;padding:7px;text-align:center;font-size:9px;min-width:0;overflow:hidden}
+.metric b{display:block;font-size:14px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:clip}.classMetric{min-width:0}.classMetric b{width:100%;min-width:0;text-align:center;font-size:13px;letter-spacing:-.25px}
+
+/* SPV */
+.spv{color:var(--red);flex-direction:column;gap:8px}
+.vectorArea{position:relative;flex:1;border:1px solid currentColor;overflow:hidden;padding-top:20px}.nodeLabel{z-index:3;left:7px;top:5px;padding:0 3px;background:#000;line-height:1.1}
+.vectorGrid{position:absolute;inset:8px;display:grid;grid-template-columns:repeat(11,1fr);grid-template-rows:repeat(11,1fr)}
+.cell{border:1px solid rgba(255,81,71,.11)}
+.square{position:absolute;width:12px;height:12px;background:currentColor;transform:translate(-50%,-50%);opacity:.8}
+.spvFooter{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.spvMetric{border:1px solid currentColor;padding:7px;font-size:9px}.spvMetric b{display:block;font-size:15px;margin-top:3px}
+
+/* SDR / SPECTRAL DECAY TRACE ANALYSER */
+.sdr{color:var(--green);flex-direction:column;gap:8px}
+.curvePanel{flex:1;min-height:0;border:1px solid currentColor;position:relative;padding:26px 10px 22px 38px}
+.axisY,.axisX{position:absolute;font-size:8px;opacity:.7}
+.axisY{left:6px;top:7px;bottom:23px;writing-mode:vertical-rl;transform:rotate(180deg);letter-spacing:1px}
+.axisX{bottom:6px;left:50%;transform:translateX(-50%);letter-spacing:1px}
+.yLabels{position:absolute;left:5px;top:26px;bottom:23px;display:flex;flex-direction:column;justify-content:space-between;font-size:7px;opacity:.55}
+.xTicks{position:absolute;left:38px;right:0;bottom:6px;display:flex;justify-content:space-between;font-size:7px;opacity:.5}
+#decayCanvas{position:absolute;left:38px;right:0;top:26px;bottom:22px;width:calc(100% - 38px);height:calc(100% - 48px)}
+.sdrLegend{position:absolute;right:7px;top:5px;font-size:7px;letter-spacing:.7px;opacity:.6}
+.sdrFooter{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.sdrMetric{border:1px solid currentColor;padding:7px;font-size:9px}.sdrMetric b{display:block;font-size:15px;margin-top:3px}
+
+/* controls */
+.modeButtons{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+button{font:12px var(--ui);letter-spacing:1px;color:#d9e8d9;background:#0c100c;border:1px solid #586258;border-radius:1px;min-height:46px}
+button:active{background:#202820;transform:translateY(1px)}
+button.touched{background:#202820;box-shadow:inset 0 0 0 2px currentColor}
+button.active{background:#182018}
+.modeButtons button[data-mode="SPD"]{color:var(--yellow)}
+.modeButtons button[data-mode="SPV"]{color:var(--red)}
+.modeButtons button[data-mode="SDR"]{color:var(--green)}
+.modeButtons button.active{background:#182018;border-width:2px}
+.modeButtons button.active[data-mode="SPD"]{border-color:var(--yellow)}
+.modeButtons button.active[data-mode="SPV"]{border-color:var(--red)}
+.modeButtons button.active[data-mode="SDR"]{border-color:var(--green)}
+.controls{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.power{width:100%;min-height:50px}
+.off .analysis,.off .readout{opacity:.38}
+@media(max-height:720px){
+ #app{gap:6px;padding-top:7px}.number{font-size:28px}.modeButtons button,.controls button{min-height:40px}.power{min-height:44px}
+}
+</style>
+</head>
+<body>
+<main id="app">
+<header class="header"><span class="title">PKE FIELD ANALYSER / V28</span><span id="status" class="status">STANDBY</span></header>
+
+<section class="readout">
+ <div id="modeTitle" class="modeTitle">SYSTEM OFFLINE</div>
+ <div id="number" class="number">00000.0</div>
+ <div class="readingState">PKE FIELD INDEX</div><div id="audioState" class="audioState">AUDIO READY</div>
+</section>
+
+<section class="analysis" id="analysis">
+ <!-- SPD SCREEN -->
+ <section class="view spd active" id="spdView">  <div class="spdPanel"><span class="panelLabel">PARTICLE DENSITY / FIELD A</span><div class="barSet" id="barsA"></div></div>
+  <div class="spdPanel"><span class="panelLabel">PARTICLE DENSITY / FIELD B</span><div class="barSet" id="barsB"></div></div>
+  <div class="spdFooter">
+   <div class="metric">DENSITY<b id="spdDensity">0.0</b></div>
+   <div class="metric">VARIANCE<b id="spdVariance">0.0</b></div>
+   <div class="metric classMetric">CLASS<b id="spdClass">—</b></div>
+  </div>
+ </section>
+
+ <!-- SPV SCREEN -->
+ <section class="view spv" id="spvView">  <div class="vectorArea" id="vectorArea"><span class="panelLabel nodeLabel">NODE / VECTOR FIELD</span>
+   <div class="vectorGrid" id="vectorGrid"></div>
+  </div>
+  <div class="spvFooter">
+   <div class="spvMetric">SPECTRAL VELOCITY<b id="spvVelocity">0.0</b></div>
+   <div class="spvMetric">VECTOR INDEX<b id="spvDirection">000°</b></div>
+  </div>
+ </section>
+
+ <!-- SDR SCREEN -->
+ <section class="view sdr" id="sdrView">  <div class="curvePanel">
+   <div class="sdrLegend">LIVE / TRACE HISTORY</div>
+   <div class="axisY">SPECTRAL ENERGY</div>
+   <div class="axisX">TIME / SECONDS</div>
+   <div class="yLabels"><span>100</span><span>75</span><span>50</span><span>25</span><span>0</span></div>
+   <div class="xTicks"><span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span></div>
+   <canvas id="decayCanvas"></canvas>
+  </div>
+  <div class="sdrFooter">
+   <div class="sdrMetric">DECAY RATE<b id="decayRate">0.00</b></div>
+   <div class="sdrMetric">ENERGY LOSS<b id="energyLoss">0.0%</b></div>
+  </div>
+ </section>
+</section>
+
+<nav class="modeButtons">
+ <button data-mode="SPD" class="active">SPD</button>
+ <button data-mode="SPV">SPV</button>
+ <button data-mode="SDR">SDR</button>
+</nav>
+<nav class="controls">
+ <button id="auto">AUTO</button><button id="hold">HOLD</button><button id="up">UP</button><button id="down">DOWN</button>
+</nav>
+<button id="power" class="power">ACTIVATE</button>
+<button id="environment" class="power">FIELD INPUT: OFF</button>
+</main>
+
+<script>
+const app=document.getElementById('app'), numberEl=document.getElementById('number'), titleEl=document.getElementById('modeTitle'), statusEl=document.getElementById('status'), audioState=document.getElementById('audioState');
+const views={SPD:document.getElementById('spdView'),SPV:document.getElementById('spvView'),SDR:document.getElementById('sdrView')};
+const modeButtons=[...document.querySelectorAll('.modeButtons button')];
+const environmentBtn=document.getElementById('environment');
+let active=false,auto=false,hold=false,mode='SPD',value=7600,t=0,frame=0;
+const spdHeights={barsA:Array(16).fill(0.08),barsB:Array(16).fill(0.08)};
+let audioCtx=null,lastValue=value,lastSound=0,sdrEnergy=0,sdrPrevious=0,sdrHistory=[],sdrTraces=[],sdrTraceClock=0,sdrEventCount=0,aweActive=false,aweUntil=0,aweNext=0;
+// EXPERIMENTAL: shared spectral event engine. It is deliberately isolated from UI controls.
+let spectralEvent={state:'QUIET',age:0,duration:0,density:0,velocity:0,direction:0,decay:0,stability:1,resonance:0,pulse:0,drift:0};
+let spectralNextEvent=0;
+let micStream=null,micSource=null,analyser=null,micData=null,micActive=false,micLevel=0,micPeak=0,micCentroid=0,micNoiseFloor=0,micSignal=0,micCalibrating=false,micCalibrationUntil=0;
+
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function sev(){return clamp((5000-value)/5000,0,1)}
+function fmt(v){return v.toFixed(1).padStart(7,'0')}
+function cls(v){
+ if(v>5000)return 'NO PKE';
+ if(v>=3000)return 'PKE SIG.';
+ if(v>=1984)return 'CLASS I–II';
+ if(v>=1555)return 'CLASS III–IV';
+ if(v>=1333.5)return 'CLASS V';
+ if(v>=500)return 'CLASS VI';
+ return 'CLASS VII';
+}
+function readingColour(v){
+ if(v>5000)return '#74ff74';
+ if(v>=3000)return '#74ff74';
+ if(v>=1984)return '#74ff74';
+ if(v>=1555)return '#ffe45a';
+ if(v>=1333.5)return '#ffcc42';
+ if(v>=500)return '#ff9638';
+ return '#ff5147';
+}
+function scaleBand(v){return readingColour(v)}
+
+function ensureAudio(){
+ try{
+  audioCtx ||= new (window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==='suspended') audioCtx.resume();
+  audioState.textContent=micActive?'FIELD INPUT ACTIVE':'AUDIO ACTIVE';
+  return true;
+ }catch(e){audioState.textContent='AUDIO UNAVAILABLE';return false}
+}
+function tone(freq,duration,gain=.025,type='sine'){
+ if(!ensureAudio()) return;
+ const now=audioCtx.currentTime,o=audioCtx.createOscillator(),g=audioCtx.createGain();
+ o.type=type;o.frequency.setValueAtTime(freq,now);g.gain.setValueAtTime(.0001,now);
+ g.gain.exponentialRampToValueAtTime(gain,now+.008);g.gain.exponentialRampToValueAtTime(.0001,now+duration);
+ o.connect(g).connect(audioCtx.destination);o.start(now);o.stop(now+duration+.01);
+}
+function modeTone(m){
+ tone(m==='SPD'?480:m==='SPV'?650:820,.075,.035,'square');
+ setTimeout(()=>tone(m==='SPD'?720:m==='SPV'?390:610,.055,.018,'square'),55);
+}
+function scanTone(){
+ if(!active||hold||!auto)return;
+ const s=sev(),interval=900-s*650;
+ if(frame-lastSound>interval/60){lastSound=frame;tone(240+s*520,.055,.012,'sine')}
+}
+
+function selectMode(m){
+ if(m!==mode)modeTone(m);mode=m;
+ Object.entries(views).forEach(([k,v])=>{
+  const on=k===m;v.classList.toggle('active',on);v.setAttribute('aria-hidden',on?'false':'true');
+  v.style.display=on?'flex':'none';v.style.visibility=on?'visible':'hidden';v.style.pointerEvents=on?'auto':'none';
+ });
+ modeButtons.forEach(b=>b.classList.toggle('active',b.dataset.mode===m));
+ titleEl.textContent=m==='SPD'?'SPECTRAL PARTICLE DENSITY':m==='SPV'?'SPECTRAL VELOCITY':'SPECTRAL DECAY RATE';
+ if(m==='SDR')setTimeout(resizeCanvas,0);
+ drawAll();
+}
+function renderStatus(){
+ numberEl.textContent=fmt(value);numberEl.style.color=readingColour(value);
+ statusEl.textContent=!active?'STANDBY':hold?'HOLD':auto?'AUTO SCAN':'MANUAL';
+ environmentBtn.textContent=micActive?'FIELD INPUT: ON':'FIELD INPUT: OFF';
+ environmentBtn.style.color=micActive?'#74ff74':'';
+ audioState.textContent=micActive?'MICROPHONE INPUT ACTIVE':(active?'AUDIO ACTIVE':'AUDIO READY');
+}
+function makeBars(id){const el=document.getElementById(id);for(let i=0;i<16;i++){const b=document.createElement('div');b.className='bar';el.appendChild(b)}}
+makeBars('barsA');makeBars('barsB');
+for(let i=0;i<121;i++){const c=document.createElement('div');c.className='cell';document.getElementById('vectorGrid').appendChild(c)}
+for(let i=0;i<12;i++){const s=document.createElement('div');s.className='square';document.getElementById('vectorArea').appendChild(s)}
+
+const canvas=document.getElementById('decayCanvas'),ctx=canvas.getContext('2d');
+function resizeCanvas(){const r=canvas.getBoundingClientRect(),d=devicePixelRatio||1;canvas.width=Math.max(1,r.width*d);canvas.height=Math.max(1,r.height*d);ctx.setTransform(d,0,0,d,0,0)}
+window.addEventListener('resize',resizeCanvas);resizeCanvas();
+
+function drawSPD(){
+ if(aweActive){
+  document.querySelectorAll('#spdView .bar').forEach(function(bar){
+   bar.style.height=(12+Math.random()*78)+'%';
+   bar.style.background=aweColour(); bar.style.borderColor=aweColour();
+   bar.style.boxShadow='none';
+  });
+  return;
+ }
+ const s=sev(),colour=scaleBand(value);
+ ['barsA','barsB'].forEach((id,bank)=>{
+  const bars=[...document.getElementById(id).children];
+  bars.forEach((b,i)=>{
+   // Three overlapping spectral components give each bar its own response rather than one shared wave.
+   const low=.07+s*.28*(.5+.5*Math.sin(i*.43+t*(.55+bank*.08)));
+   const mid=s*.34*(.5+.5*Math.sin(i*1.17-t*(.9+bank*.13)+bank));
+   const high=s*.32*(.5+.5*Math.sin(i*2.31+t*(1.45+bank*.2)+i*.37));
+   const local=(Math.sin(i*4.9+t*2.7+bank*3.1)*.5+.5)*s*.18;
+   const target=clamp(low+mid+high+local,.045,.98);
+   spdHeights[id][i]+= (target-spdHeights[id][i])*(.16+.10*s);
+   b.style.height=clamp(spdHeights[id][i]*100,4,100)+'%';
+   b.style.backgroundColor=colour;b.style.boxShadow='none';
+  });
+ });
+ document.getElementById('spdDensity').textContent=(s*100).toFixed(1);
+ document.getElementById('spdVariance').textContent=(s*(10+Math.sin(t)*2)).toFixed(1);
+ document.getElementById('spdClass').textContent=aweActive?'ERROR':
+  value>=5000?'NO PKE':
+  value>=3000?'PKE DETECT':
+  value>=1984?'I–II':
+  value>=1555?'III–IV':
+  value>=1333.5?'V':
+  value>=500?'VI':'VII';
+}
+function drawSPV(){
+ if(aweActive){
+  // AWE breaks the normal vector model: every node moves independently
+  // through the whole field rather than inheriting the normal clustered path.
+  document.querySelectorAll('#vectorArea .square').forEach(function(sq,i){
+   const p=i*.91;
+   const x=50 + Math.sin(t*(1.05+(i%3)*.17)+p)*35 + Math.sin(t*2.37+p*1.7)*11;
+   const y=50 + Math.cos(t*(.82+(i%4)*.13)+p*1.31)*32 + Math.sin(t*2.83+p)*12;
+   const size=0.65 + (Math.sin(t*3.1+p*2.2)+1)*.42;
+   const opacity=.45 + (Math.sin(t*2.1+p)+1)*.25;
+   sq.style.left=Math.max(6,Math.min(94,x))+'%';
+   sq.style.top=Math.max(8,Math.min(92,y))+'%';
+   sq.style.width=(9+size*9)+'px';
+   sq.style.height=(9+size*9)+'px';
+   sq.style.opacity=opacity.toFixed(2);
+   sq.style.background=aweColour(); sq.style.borderColor=aweColour();
+   sq.style.transform='translate(-50%,-50%) rotate('+(Math.sin(t*1.7+p)*45)+'deg) scale('+size.toFixed(2)+')';
+  });
+  return;
+ }
+ const s=sev();
+ // Normal SPV is a moving vector stream: nodes travel through a shared
+ // direction, but each node follows a slightly different curved path.
+ const angle=t*(.34+.42*s)+Math.sin(t*.17)*(.22+.35*s);
+ const dx=Math.cos(angle),dy=Math.sin(angle),perpX=-dy,perpY=dx;
+ const dir=(Math.atan2(dy,dx)*180/Math.PI+360)%360;
+ const speed=clamp(1.8+s*10,1.8,11.8);
+ document.getElementById('spvVelocity').textContent=speed.toFixed(1);
+ document.getElementById('spvDirection').textContent=String(Math.round(dir)).padStart(3,'0')+'°';
+ const squares=document.querySelectorAll('.square');
+ squares.forEach((q,i)=>{
+   const u=i/(squares.length-1)-.5;
+   const phase=t*(.75+.85*s)+i*.48;
+   const travel=Math.sin(phase)*(.12+.18*s)+u*(12+22*s);
+   const lateral=Math.sin(phase*1.27+i*.73)*(2.5+10*s);
+   const x=50+dx*travel*2.15+perpX*lateral;
+   const y=50+dy*travel*1.65+perpY*lateral;
+   const size=7+s*7+Math.sin(phase*1.4+i)*1.4;
+   const opacity=clamp(.18+s*.72+Math.sin(phase+i)*.12-Math.abs(u)*.16,.10,1);
+   q.style.left=clamp(x,5,95)+'%';
+   q.style.top=clamp(y,8,92)+'%';
+   q.style.width=Math.max(5,size)+'px';q.style.height=Math.max(5,size)+'px';
+   q.style.opacity=opacity.toFixed(2);
+   q.style.background='currentColor';q.style.borderColor='transparent';
+   q.style.transform='translate(-50%,-50%) rotate('+(angle*57.2958+Math.sin(phase)*18).toFixed(1)+'deg)';
+ });
+}
+function initSDRTraces(){
+  sdrTraces=[];
+  const points=220;
+  for(let i=0;i<4;i++){
+    sdrTraces.push({
+      history:Array(points).fill(0),
+      cursor:0,
+      level:0,
+      target:0,
+      phase:Math.random()*Math.PI*2,
+      decay:.07+Math.random()*.05,
+      attack:.22+Math.random()*.12,
+      age:0,
+      active:false,
+      completed:false,
+      points
+    });
+  }
+}
+initSDRTraces();
+
+function spawnSDREvent(trace,energy){
+  trace.history.fill(0);
+  trace.cursor=0;
+  trace.level=0;
+  trace.target=clamp(energy,0,1);
+  trace.age=0;
+  trace.active=true;
+  trace.completed=false;
+  trace.decay=.07+Math.random()*.11;
+  trace.attack=.28+Math.random()*.18;
+  sdrEventCount++;
+}
+
+function updateSDRTraces(dt){
+  const field=clamp(sev()*.9+(micActive?micSignal*.65:0),0,1);
+  sdrTraceClock+=dt;
+
+  // Start a new trace when a slot is free. Each trace is a true left-to-right
+  // time history: the newest sample is written at the current cursor position.
+  const eventInterval=Math.max(.34,.82-field*.42);
+  if(sdrTraceClock>=eventInterval){
+    const available=sdrTraces.filter(tr=>!tr.active);
+    const tr=available.length
+      ? available[Math.floor(Math.random()*available.length)]
+      : sdrTraces[Math.floor(Math.random()*sdrTraces.length)];
+    spawnSDREvent(tr,clamp(.10+field*.70+Math.random()*.14,0,1));
+    sdrTraceClock=0;
+  }
+
+  sdrTraces.forEach((tr,i)=>{
+    if(!tr.active)return;
+
+    tr.age+=dt;
+    if(tr.age<.18){
+      tr.level += (tr.target-tr.level)*tr.attack;
+    }else{
+      tr.level += (0-tr.level)*tr.decay*.055;
+    }
+    tr.level=clamp(tr.level,0,1);
+
+    // One new measurement point is committed at each animation step. The
+    // first point is always ZERO at the lower-left of the analyser.
+    const ripple=Math.sin(tr.cursor*.27+tr.phase+t*1.7)*.012;
+    tr.history[tr.cursor]=clamp(tr.level+ripple,0,1);
+    tr.cursor++;
+
+    // Once the trace reaches the right edge, keep the newest data at the right
+    // and scroll the older history left by one point.
+    if(tr.cursor>=tr.points){
+      tr.history.shift();
+      tr.history.push(clamp(tr.level,0,1));
+      tr.cursor=tr.points-1;
+    }
+
+    if(tr.level<.018 && tr.age>1.5){
+      tr.active=false;
+      tr.completed=true;
+    }
+  });
+
+  sdrPrevious=field;
+  sdrEnergy=sdrTraces.reduce((a,tr)=>a+tr.level,0)/sdrTraces.length;
+}
+
+function drawSDR(){
+  const r=canvas.getBoundingClientRect();
+  if(r.width<2 || r.height<2)return;
+  const d=devicePixelRatio||1;
+  if(canvas.width !== Math.max(1,Math.round(r.width*d)) || canvas.height !== Math.max(1,Math.round(r.height*d))) resizeCanvas();
+  const rr=canvas.getBoundingClientRect(),w=rr.width,h=rr.height;
+  ctx.clearRect(0,0,w,h);
+
+  // Technical analyser grid.
+  ctx.strokeStyle='rgba(116,255,116,.14)';
+  ctx.lineWidth=1;
+  for(let i=1;i<4;i++){
+    const y=h*i/4;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();
+  }
+  for(let i=1;i<5;i++){
+    const x=w*i/5;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();
+  }
+
+  if(aweActive){
+    // AWE breaks the expected decay model: the live trace becomes unstable
+    // while still respecting the analyser's left-to-right time direction.
+    for(let tr=0;tr<sdrTraces.length;tr++){
+      ctx.strokeStyle=aweColour();ctx.lineWidth=tr===0?2:1.5;ctx.beginPath();
+      for(let i=0;i<=180;i++){
+        const x=i/180*w;
+        const base=.28+tr*.14;
+        const y=h*(base + Math.sin(i*.16+t*(2.4+tr*.35)+tr)*.18 + Math.sin(i*.47-t*1.7)*.12 + (Math.random()-.5)*.18);
+        if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    }
+    document.getElementById('decayRate').textContent='ERR';
+    document.getElementById('energyLoss').textContent='ERR';
+    return;
+  }
+
+  updateSDRTraces(.06);
+  let totalDecay=0,decaySamples=0;
+
+  sdrTraces.forEach((tr,ti)=>{
+    const baseline=h-(10+ti*2);
+    ctx.strokeStyle='#74ff74';
+    ctx.globalAlpha=.58+ti*.08;
+    ctx.lineWidth=ti===0?2:1.4;
+    ctx.beginPath();
+
+    // Draw only the committed history. x=0 is always the ZERO origin; newer
+    // samples progress toward the right edge. Once full, history scrolls left.
+    for(let i=0;i<tr.points;i++){
+      const x=i/(tr.points-1)*w;
+      const sample=clamp(tr.history[i],0,1);
+      const y=baseline-sample*(h-16);
+      if(i===0)ctx.moveTo(x,baseline);else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    ctx.globalAlpha=1;
+
+    // Mark the live write position so the direction is visually obvious.
+    const liveIndex=Math.min(tr.cursor,tr.points-1);
+    const liveX=liveIndex/(tr.points-1)*w;
+    const liveSample=tr.history[liveIndex]||0;
+    const liveY=baseline-liveSample*(h-16);
+    if(tr.active){
+      ctx.fillStyle='#74ff74';
+      ctx.beginPath();ctx.arc(liveX,liveY,2.8,0,Math.PI*2);ctx.fill();
+    }
+
+    // Calculate decay from the most recent committed samples.
+    if(tr.cursor>8){
+      const recent=tr.history[Math.max(0,tr.cursor-1)];
+      const older=tr.history[Math.max(0,tr.cursor-8)];
+      if(recent<older){totalDecay+=older-recent;decaySamples++;}
+    }
+  });
+
+  const decayRate=decaySamples?clamp(totalDecay/decaySamples*8,.02,9.99):.02;
+  const loss=clamp((1-sdrEnergy)*100,0,100);
+  document.getElementById('decayRate').textContent=decayRate.toFixed(2);
+  document.getElementById('energyLoss').textContent=loss.toFixed(1)+'%';
+}
+
+// EXPERIMENTAL SPECTRAL EVENT ENGINE
+// The engine is read-only with respect to activation, mode, AUTO/HOLD and Field Input.
+function newSpectralEvent(now){
+  const e=spectralEvent;
+  e.state='EMERGENCE'; e.age=0;
+  e.duration=3.8+Math.random()*5.8;
+  e.density=.18+Math.random()*.72;
+  e.velocity=.12+Math.random()*.82;
+  e.direction=Math.random()*Math.PI*2;
+  e.decay=.18+Math.random()*.72;
+  e.stability=.45+Math.random()*.55;
+  e.resonance=Math.random();
+  e.pulse=Math.random();
+  e.drift=(Math.random()-.5)*.35;
+  spectralNextEvent=now+e.duration+2.5+Math.random()*5;
+}
+function updateSpectralEvent(dt,now){
+  if(!active || hold){return;}
+  const e=spectralEvent;
+  e.age+=dt;
+  const p=clamp(e.age/e.duration,0,1);
+  if(e.age<.75){
+    e.state='EMERGENCE';
+  }else if(p<.38){
+    e.state='RISING';
+  }else if(p<.60){
+    e.state='PEAK';
+  }else if(p<.86){
+    e.state='COLLAPSE';
+  }else{
+    e.state='DECAY';
+  }
+  const rise=clamp(e.age/.95,0,1);
+  const fall=clamp((e.duration-e.age)/(e.duration*.46),0,1);
+  const envelope=clamp(Math.min(rise,1)*Math.max(fall,.08),0,1);
+  const pulse=.5+.5*Math.sin(e.age*(5.5+e.resonance*8)+e.resonance*7);
+  e.pulse=pulse;
+  e.density=clamp((.16+e.density*.84)*envelope + pulse*e.resonance*.10,0,1);
+  e.velocity=clamp((.12+e.velocity*.88)*(0.55+envelope*.7)+Math.sin(e.age*2.1)*.08,0,1);
+  e.direction+=e.drift*dt + Math.sin(e.age*1.3+e.resonance*4)*.015*dt;
+  e.decay=clamp(e.decay*(.997-dt*.035)+(.5-envelope)*.018,0,1);
+  e.stability=clamp(.35+e.stability*.65 - (1-envelope)*.18 + Math.sin(e.age*2.7)*.03,0,1);
+  if(e.age>=e.duration){
+    e.state='RESIDUAL';
+    e.density*=.82; e.velocity*=.9; e.decay=clamp(e.decay+.012,0,1);
+    if(now>=spectralNextEvent){newSpectralEvent(now);}
+  }
+}
+function spectralExcitation(){
+  const e=spectralEvent;
+  return clamp(e.density*.72 + e.velocity*.12 + e.pulse*e.resonance*.08,0,1);
+}
+
+function triggerAWE(){
+  aweActive=true;
+  aweUntil=performance.now()+6500+Math.random()*6500;
+  document.getElementById('spdClass').textContent='ERROR';
+  tone(95,.18,.035,'sawtooth');
+}
+function updateAWE(now){
+  if(!aweActive && now>=aweNext && active && Math.random()<0.0018) triggerAWE();
+  if(aweActive && now>=aweUntil){
+    aweActive=false;
+    aweNext=now+18000+Math.random()*26000;
+  }
+}
+function aweColour(){return '#58b9ff';}
+
+function drawAll(){renderStatus();if(mode==='SPD')drawSPD();else if(mode==='SPV')drawSPV();else drawSDR()}
+
+function readMicrophone(){
+ if(!analyser||!micData)return;
+ analyser.getByteTimeDomainData(micData);
+ let sum=0;
+ for(let i=0;i<micData.length;i++){
+  const x=(micData[i]-128)/128;
+  sum+=x*x;
+ }
+ const rms=Math.sqrt(sum/micData.length);
+
+ // Establish the phone's local ambient floor when Field Input starts.
+ if(micCalibrating){
+  micNoiseFloor = micNoiseFloor*.92 + rms*.08;
+ } else {
+  // Slowly follow the background only when the signal is close to it.
+  if(rms < micNoiseFloor + .012) micNoiseFloor = micNoiseFloor*.995 + rms*.005;
+ }
+
+ micLevel=micLevel*.72+rms*.28;
+ micPeak=Math.max(micPeak*.94,rms);
+
+ const bins=new Uint8Array(analyser.frequencyBinCount);
+ analyser.getByteFrequencyData(bins);
+ let weighted=0,total=0;
+ for(let i=1;i<bins.length;i++){
+  const a=bins[i];
+  total+=a;
+  weighted+=a*i;
+ }
+ micCentroid=total?weighted/total/bins.length:0;
+
+ // A small sound above the local floor is enough to register.
+ const aboveFloor=Math.max(0,micLevel-micNoiseFloor-.0035);
+ const peakAbove=Math.max(0,micPeak-micNoiseFloor-.006);
+ micSignal=clamp(aboveFloor*18 + peakAbove*7 + micCentroid*.22,0,1);
+
+ if(micCalibrating && performance.now()>=micCalibrationUntil){
+  micCalibrating=false;
+  audioState.textContent='MICROPHONE INPUT ACTIVE';
+ }
+}
+
+async function toggleMicrophone(){
+ if(micActive){
+  micStream?.getTracks().forEach(track=>track.stop());micStream=null;micSource?.disconnect();micSource=null;analyser=null;micData=null;micActive=false;
+  environmentBtn.textContent='FIELD INPUT: OFF';audioState.textContent=active?'AUDIO ACTIVE':'AUDIO READY';drawAll();return;
+ }
+ if(!navigator.mediaDevices?.getUserMedia){audioState.textContent='MICROPHONE UNAVAILABLE';return}
+ try{
+  ensureAudio();
+  micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  micSource=audioCtx.createMediaStreamSource(micStream);analyser=audioCtx.createAnalyser();analyser.fftSize=512;analyser.smoothingTimeConstant=.65;micData=new Uint8Array(analyser.fftSize);micSource.connect(analyser);
+  micActive=true;micNoiseFloor=micLevel;micSignal=0;micCalibrating=true;micCalibrationUntil=performance.now()+1400;environmentBtn.textContent='FIELD INPUT: ON';audioState.textContent='CALIBRATING FIELD INPUT';
+ }catch(e){micActive=false;audioState.textContent='MIC PERMISSION DENIED'}
+ drawAll();
+}
+
+function cleanupMicrophone(){
+  if(micStream){
+    micStream.getTracks().forEach(function(track){ track.stop(); });
+  }
+  micStream=null;
+  if(micSource){ try{ micSource.disconnect(); }catch(e){} }
+  micSource=null;
+  analyser=null;
+  micData=null;
+  micActive=false;
+}
+
+document.addEventListener('click', function(event){
+  var button = event.target.closest('button');
+  if(!button) return;
+
+  var id = button.id;
+  var selectedMode = button.getAttribute('data-mode');
+
+  if(id === 'environment'){
+    toggleMicrophone();
+    return;
+  }
+
+  if(id === 'power'){
+    active = !active;
+    if(active){
+      ensureAudio();
+      value = 7600;
+      auto = true;
+      hold = false;
+      document.getElementById('power').textContent = 'DEACTIVATE';
+      tone(420,.12,.035,'square');
+    }else{
+      auto = false;
+      hold = false;
+      document.getElementById('power').textContent = 'ACTIVATE';
+      tone(180,.12,.025,'square');
+    }
+    drawAll();
+    return;
+  }
+
+  if(selectedMode){
+    if(active) selectMode(selectedMode);
+    return;
+  }
+
+  if(id === 'auto'){
+    if(active){ auto=true; hold=false; drawAll(); }
+    return;
+  }
+
+  if(id === 'hold'){
+    if(active){ hold=!hold; drawAll(); }
+    return;
+  }
+
+  if(id === 'up'){
+    if(active){
+      value=clamp(value+250,0,10000);
+      auto=false; hold=false;
+      tone(620,.035,.018,'square');
+      drawAll();
+    }
+    return;
+  }
+
+  if(id === 'down'){
+    if(active){
+      value=clamp(value-250,0,10000);
+      auto=false; hold=false;
+      tone(300,.035,.018,'square');
+      drawAll();
+    }
+  }
+});
+
+document.addEventListener('pointerdown', function(event){
+  var button=event.target.closest('button');
+  if(button) button.classList.add('touched');
+});
+document.addEventListener('pointerup', function(event){
+  var button=event.target.closest('button');
+  if(button) setTimeout(function(){button.classList.remove('touched');},120);
+});
+document.addEventListener('pointercancel', function(event){
+  var button=event.target.closest('button');
+  if(button) button.classList.remove('touched');
+});
+
+
+function tick(){
+ const now=performance.now(); updateAWE(now);
+ updateSpectralEvent(.06,now);
+ if(active&&!hold){
+  if(micActive){
+   readMicrophone();
+   if(auto){
+    // Ambient sound excites the field, but the scan always retains a recovery path.
+    const excitation=clamp(micSignal*.72 + spectralExcitation()*.28,0,1);
+    const target=7600-excitation*7600;
+    const drift=(target-value)*.19;
+    const recovery=value<650 ? Math.min(95, (650-value)*.055) : 0;
+    value=clamp(value+drift+recovery,0,10000);
+   }
+  } else if(auto){
+   // Random field movement with gentle mean-reversion so Class VII cannot become a dead end.
+   const s=sev();
+   const baseline=6800;
+   const recovery=value<1200 ? Math.min(85,(1200-value)*.045) : (value>8200 ? -35 : 0);
+   const eventPull=(spectralExcitation()-s)*720;
+   const wandering=(Math.random()-.5)*520 + Math.sin(spectralEvent.age*2.2)*180;
+   const downward=-s*120;
+   const meanPull=(baseline-value)*.012;
+   value=clamp(value+wandering+eventPull+downward+meanPull+recovery,0,10000);
+  }
+ }
+ t+=.035;frame++;scanTone();drawAll();
+}
+spectralNextEvent=performance.now()+1800;
+setInterval(tick,60);
+drawAll();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+window.addEventListener('pagehide',cleanupMicrophone);
+</script>
+</body>
