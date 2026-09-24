@@ -145,7 +145,7 @@ label{display:block;color:var(--muted);font-size:11px;margin:8px 0 4px}
 <div class="formgrid"><div><label>DATE</label><input id="editdate" type="text" placeholder="DD/MM/YYYY" inputmode="numeric" maxlength="10"></div><div><label>TIME</label><input id="editTime" type="text" placeholder="HH:MM" inputmode="numeric" maxlength="5"></div></div>
 <label>CASE STATUS</label><select id="editstatus"><option>ACTIVE INVESTIGATION</option><option>OPEN</option><option>SUSPENDED</option><option>CLOSED</option><option>HISTORICAL</option></select>
 <label>CASE TYPE</label><select id="edittype"><option>AWE — ALTERED WORLD EVENT</option><option>RP — RESIDUAL PHENOMENON</option><option>PKE — PSYCHOKINETIC EVENT</option><option>EM — ENTITY MANIFESTATION</option><option>AE — ANOMALOUS ENTITY</option><option>EE — ECTOPLASMIC EVENT</option><option>LA — LOCATION ANOMALY</option><option>TA — TEMPORAL ANOMALY</option><option>EA — ENVIRONMENTAL ANOMALY</option></select>
-<label>SUBTYPE</label><input id="editsub"><label>CLASSIFICATION</label><select id="editclass"><option>UNRESOLVED</option><option>PROVISIONAL</option><option>INSUFFICIENT DATA</option><option>CONFLICTING DATA</option><option>REQUIRES FIELD INVESTIGATION</option><option>MODEL FAILURE</option><option>HISTORICAL / DISPUTED</option></select>
+<label>SUBTYPE</label><input id="editsub">
 <label>INITIAL OBSERVATION</label><textarea id="editobs" rows="5"></textarea>
 <div class="toolbar"><button class="primary" onclick="saveEditedCase()">SAVE CHANGES</button><button onclick="show('overview')">CANCEL</button></div></div></section>
 
@@ -185,14 +185,25 @@ label{display:block;color:var(--muted);font-size:11px;margin:8px 0 4px}
 let selectedType='AWE — ALTERED WORLD EVENT';
 let soundEnabled=true, audioCtx=null, currentCase=null;
 
-function toggleSound(){soundEnabled=!soundEnabled;document.getElementById('soundBtn').textContent=soundEnabled?'SOUND ON':'SOUND OFF';if(soundEnabled)uiSound('confirm')}
-function convertSelects(){
-  if(!document.body.dataset.xselectCloser){
-    document.addEventListener('click',e=>{if(!e.target.closest('.xselect'))document.querySelectorAll('.xselect.open').forEach(x=>x.classList.remove('open'))});
-    document.body.dataset.xselectCloser='1';
-  }
-  document.querySelectorAll('select').forEach(sel=>{if(sel.dataset.customized)return;sel.dataset.customized='1';let wrap=document.createElement('div');wrap.className='xselect';let btn=document.createElement('button');btn.type='button';btn.className='xselect-btn';btn.textContent=sel.options[sel.selectedIndex]?.text||'';let menu=document.createElement('div');menu.className='xselect-menu';Array.from(sel.options).forEach((op,i)=>{let d=document.createElement('div');d.className='xoption'+(i===sel.selectedIndex?' active':'');d.textContent=op.text;d.onclick=()=>{sel.value=op.value;sel.dispatchEvent(new Event('change',{bubbles:true}));btn.textContent=op.text;menu.querySelectorAll('.xoption').forEach(x=>x.classList.remove('active'));d.classList.add('active');wrap.classList.remove('open');uiSound('click')};menu.appendChild(d)});btn.onclick=()=>{document.querySelectorAll('.xselect.open').forEach(x=>x!==wrap&&x.classList.remove('open'));wrap.classList.toggle('open');uiSound('click')};wrap.append(btn,menu);sel.style.display='none';sel.parentNode.insertBefore(wrap,sel.nextSibling)});}
+function saveEditedCase(){
+  if(!currentCase)return;
+  const oldId=currentCase.id;
+  const newId=document.getElementById('editid').value.trim()||oldId;
+  const c={...currentCase,id:newId,loc:document.getElementById('editloc').value.trim()||'UNSPECIFIED',site:document.getElementById('editsite').value.trim(),date:formatDate(document.getElementById('editdate').value),time:formatTime(document.getElementById('editTime').value),status:document.getElementById('editstatus').value,type:document.getElementById('edittype').value,sub:document.getElementById('editsub').value.trim()||'UNKNOWN',cls:document.getElementById('editclass').value,obs:document.getElementById('editobs').value.trim(),updated:new Date().toISOString()};
+  saveCases([c,...getSaved().filter(x=>x.id!==oldId&&x.id!==newId)]);
+  if(oldId!==newId)migrateCaseData(oldId,newId);
+  currentCase=c;loadSavedCase(c);renderSaved();show('overview');uiSound('save');toast('CASE UPDATED');
+}
 
+const demos={
+'SE-0261':{id:'SE-0261',loc:'Portsmouth, Hampshire',type:'AWE — ALTERED WORLD EVENT',sub:'UNKNOWN',cls:'UNRESOLVED',obs:'Unusual localized field disturbance reported during routine monitoring. PKE Field Analyser readings subsequently confirmed elevated activity.'},
+'SE-1977':{id:'HIST-ENFIELD',loc:'Enfield, London',type:'PKE — PSYCHOKINETIC EVENT',sub:'POLTERGEIST',cls:'HISTORICAL / DISPUTED',obs:'Historical reports describe alleged unexplained disturbances. SER records the case as a research subject; reported phenomena are not treated as established fact.'}
+};
+function show(id,btn){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById(id).classList.add('active');if(btn){document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}}
+function loadDemo(id){let c=demos[id];if(!c)return;currentCase=null;document.getElementById('caseid').textContent=c.id;document.getElementById('location').textContent=c.loc;document.getElementById('ctype').textContent=c.type;document.getElementById('subtype').textContent=c.sub;document.getElementById('classif').textContent=c.cls;document.getElementById('obstext').textContent=c.obs;loadNotes();renderEvidence();renderObservations();renderTimeline();renderAnalysis();show('overview');uiSound('open')}
+function pickType(el,type){selectedType=type;selectedSubtype='UNKNOWN';document.getElementById('newsub').value='UNKNOWN';document.querySelectorAll('#typegrid button').forEach(b=>b.classList.remove('selected'));el.classList.add('selected');renderSubtypes();uiSound('select')}
+function getSaved(){try{return JSON.parse(localStorage.getItem('ser_cases')||'[]')}catch(e){return[]}}
+function saveCases(a){localStorage.setItem('ser_cases',JSON.stringify(a))}
 function editCurrentCase(){
   const id=document.getElementById('caseid').textContent;
   const c=getSaved().find(x=>x.id===id);
@@ -212,6 +223,7 @@ function editCurrentCase(){
   setTimeout(convertSelects,0);
   uiSound('edit');
 }
+
 function loadSavedCase(c){currentCase=c;document.getElementById('caseid').textContent=c.id;document.getElementById('location').textContent=c.loc;document.getElementById('ctype').textContent=c.type;document.getElementById('subtype').textContent=c.sub;document.getElementById('classif').textContent=c.cls;document.getElementById('obstext').textContent=c.obs;loadNotes();renderEvidence();renderObservations();renderTimeline();renderAnalysis();show('overview')}
 
 const subtypes = {
@@ -267,16 +279,8 @@ function formatTime(value){
  return digits.slice(0,2)+':'+digits.slice(2,4);
 }
 function setupDateTimeInputs(){
- ['newdate','editdate','evDate','obDate','tlDate'].forEach(id=>{
-   const el=document.getElementById(id);if(!el)return;
-   el.addEventListener('input',()=>{el.value=formatDate(el.value)});
-   el.addEventListener('blur',()=>{el.value=formatDate(el.value)});
- });
- ['newtime','editTime','evTime','obTime','tlTime'].forEach(id=>{
-   const el=document.getElementById(id);if(!el)return;
-   el.addEventListener('input',()=>{el.value=formatTime(el.value)});
-   el.addEventListener('blur',()=>{el.value=formatTime(el.value)});
- });
+ ['newdate','editdate','evDate','obDate','tlDate'].forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener('input',()=>el.value=formatDate(el.value));el.addEventListener('blur',()=>el.value=formatDate(el.value));}});
+ ['newtime','editTime','evTime','obTime','tlTime'].forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener('input',()=>el.value=formatTime(el.value));el.addEventListener('blur',()=>el.value=formatTime(el.value));}});
 }
 function beginEdit(id){
   const c=getSaved().find(x=>x.id===id);
@@ -285,120 +289,28 @@ function beginEdit(id){
   document.getElementById('caseid').textContent=c.id;
   editCurrentCase();
 }
-function migrateCaseData(oldId,newId){
-  if(!oldId || !newId || oldId===newId)return;
-  const prefixes=['ser_evidence_','ser_observations_','ser_timeline_','ser_notes_','ser_analysis_'];
-  prefixes.forEach(prefix=>{
-    const oldKey=prefix+oldId, newKey=prefix+newId;
-    const oldValue=localStorage.getItem(oldKey);
-    if(oldValue!==null){
-      localStorage.setItem(newKey,oldValue);
-      localStorage.removeItem(oldKey);
-    }
-  });
-}
-
 function createCase(){
   const id=document.getElementById('newid').value.trim()||'SE-NEW';
-  const c={
-    id,
-    loc:document.getElementById('newloc').value.trim()||'UNSPECIFIED',
-    site:document.getElementById('newsite').value.trim(),
-    sub:document.getElementById('newsub').value||'UNKNOWN',
-    obs:document.getElementById('newobs').value.trim()||'No initial observation entered.',
-    type:selectedType,
-    cls:'UNRESOLVED',
-    status:document.getElementById('newstatus').value,
-    date:formatDate(document.getElementById('newdate').value),
-    time:formatTime(document.getElementById('newtime')?.value),
-    created:new Date().toISOString()
-  };
-  let a=getSaved().filter(x=>x.id!==id);
-  a.unshift(c);
-  saveCases(a);
-  loadSavedCase(c);
-  renderSaved();
-  show('overview');
-  uiSound('save');
+  const c={id,loc:document.getElementById('newloc').value.trim()||'UNSPECIFIED',site:document.getElementById('newsite').value.trim(),sub:document.getElementById('newsub').value||'UNKNOWN',obs:document.getElementById('newobs').value.trim()||'No initial observation entered.',type:selectedType,cls:'UNRESOLVED',status:document.getElementById('newstatus').value,date:formatDate(document.getElementById('newdate').value),time:formatTime(document.getElementById('newtime')?.value),created:new Date().toISOString()};
+  saveCases([c,...getSaved().filter(x=>x.id!==id)]);loadSavedCase(c);renderSaved();show('overview');uiSound('save');
 }
 
-function saveEditedCase(){
-  if(!currentCase)return;
-  const oldId=currentCase.id;
-  const newId=document.getElementById('editid').value.trim()||oldId;
-
-  const updated={
-    ...currentCase,
-    id:newId,
-    loc:document.getElementById('editloc').value.trim()||'UNSPECIFIED',
-    site:document.getElementById('editsite').value.trim(),
-    date:formatDate(document.getElementById('editdate').value),
-    time:formatTime(document.getElementById('editTime').value),
-    status:document.getElementById('editstatus').value,
-    type:document.getElementById('edittype').value,
-    sub:document.getElementById('editsub').value.trim()||'UNKNOWN',
-    cls:document.getElementById('editclass').value,
-    obs:document.getElementById('editobs').value.trim(),
-    updated:new Date().toISOString()
-  };
-
-  let a=getSaved().filter(x=>x.id!==oldId && x.id!==newId);
-  a.unshift(updated);
-  saveCases(a);
-
-  if(oldId!==newId)migrateCaseData(oldId,newId);
-
-  currentCase=updated;
-  loadSavedCase(updated);
-  renderSaved();
-  show('overview');
-  uiSound('save');
-  toast('CASE SAVED');
-}
-
-function getSaved(){
-  try{return JSON.parse(localStorage.getItem('ser_cases')||'[]')}catch(e){return[]}
-}
-function saveCases(a){
-  localStorage.setItem('ser_cases',JSON.stringify(a));
-}
 function renderSaved(){
-  const box=document.getElementById('savedCases');
-  if(!box)return;
-  const a=getSaved();
-  box.innerHTML='';
-  if(!a.length){
-    box.innerHTML='<div class="mini">No custom cases saved on this device.</div>';
-    return;
-  }
-  a.forEach(c=>{
-    const row=document.createElement('div');
-    row.className='row';
-
-    const info=document.createElement('div');
-    const title=document.createElement('b');
-    title.textContent=c.id;
-    info.appendChild(title);
-    info.appendChild(document.createTextNode(' — '+c.loc));
-
-    const mini=document.createElement('div');
-    mini.className='mini';
-    mini.textContent=(c.type||'UNCLASSIFIED')+' / '+(c.status||'OPEN');
-    info.appendChild(mini);
-
-    const btn=document.createElement('button');
-    btn.className='small';
-    btn.type='button';
-    btn.textContent='OPEN';
-    btn.addEventListener('click',e=>{
-      e.stopPropagation();
-      loadSavedCase(c);
-      uiSound('open');
-    });
-
-    row.append(info,btn);
-    box.appendChild(row);
-  });
+  const box=document.getElementById('savedCases');if(!box)return;const cases=getSaved();box.innerHTML='';
+  if(!cases.length){box.innerHTML='<div class="mini">No custom cases saved on this device.</div>';return;}
+  cases.forEach(c=>{const row=document.createElement('div');row.className='row';const info=document.createElement('div');const title=document.createElement('b');title.textContent=c.id;info.append(title,document.createTextNode(' — '+(c.loc||'UNSPECIFIED')));const mini=document.createElement('div');mini.className='mini';mini.textContent=(c.type||'UNCLASSIFIED')+' / '+(c.status||'OPEN');info.appendChild(mini);const btn=document.createElement('button');btn.type='button';btn.className='small';btn.textContent='OPEN';btn.onclick=e=>{e.stopPropagation();loadSavedCase(c);uiSound('open')};row.append(info,btn);box.appendChild(row);});
+}
+function openSaved(id){let c=getSaved().find(x=>x.id===decodeURIComponent(id));if(c)loadSavedCase(c)}
+renderSaved();convertSelects();setupDateTimeInputs();renderEvidence();renderObservations();renderTimeline();renderAnalysis();loadNotes();
+function currentEvidenceKey(){return 'ser_evidence_'+(document.getElementById('caseid')?.textContent||'SE-0261')}
+function getEvidence(){try{return JSON.parse(localStorage.getItem(currentEvidenceKey())||'[]')}catch(e){return[]}}
+function saveEvidenceData(a){localStorage.setItem(currentEvidenceKey(),JSON.stringify(a))}
+function openEvidenceForm(){
+ document.getElementById('evidenceForm').style.display='block';
+ document.getElementById('evDate').value=document.getElementById('evDate').value||'';
+ document.getElementById('evTime').value=document.getElementById('evTime').value||'';
+ document.getElementById('evType').focus();
+ uiSound('open');
 }
 function closeEvidenceForm(){document.getElementById('evidenceForm').style.display='none';clearEvidenceForm();uiSound('tap')}
 function clearEvidenceForm(){['evType','evSource','evDate','evTime','evDescription','evNotes'].forEach(id=>{let el=document.getElementById(id);if(el)el.value=''})}
@@ -441,6 +353,7 @@ function saveNotes(){const v=document.getElementById('notesText').value;localSto
 function loadNotes(){const v=localStorage.getItem(caseKey('ser_notes'));if(v!==null)document.getElementById('notesText').value=v}
 function updateEvidenceSummary(){const a=getEvidence();const count=document.getElementById('evidenceCount');if(count)count.textContent=a.length;const st=document.getElementById('evidenceStatus');if(st)st.textContent=a.length?'RECORDED':'NO RECORDS';const sources=document.getElementById('evidenceSources');if(sources){const set=[...new Set(a.map(e=>e.source).filter(Boolean))];sources.textContent=set.length?set.join(' / '):'—'}}
 
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;uiSound(b.classList.contains('danger')?'error':(b.classList.contains('primary')?'confirm':'tap'));},{capture:true});
 </script>
 <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
 </body></html>

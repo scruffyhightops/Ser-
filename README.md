@@ -1,13 +1,13 @@
-SER Stage 7.1.1 — Repair Build
+SER Stage 7 — Evidence & Research
 
-Repair-only release based on the supplied SER HTML.
-
-Fixed:
-- Saved case OPEN control
-- Duplicate edit logic
-- Dedicated Edit Case persistence
-- Case ID data migration
-- Duplicate sound engine/listener
-- Official SER name: Spectral Event Research
-
-No Stage 8 features added.
+Changes from Stage 6:
+- Removed duplicate EDIT CASE control from the main case overview.
+- Evidence register expanded with persistent case-linked evidence records.
+- Evidence can be marked as supporting or contradicting the working hypothesis.
+- Added Observations with confidence and evidence references.
+- Added editable case timeline entries; saved observations can create timeline entries.
+- Added persistent Working Hypothesis and Classification state.
+- Research Notes now save locally per case.
+- Date/time entry remains slash/colon-free: type DDMMYYYY and HHMM.
+- Generated UI sounds continue to apply to button interactions.
+- All data remains local to the device for this prototype.
