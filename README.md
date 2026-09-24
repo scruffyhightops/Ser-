@@ -1,10 +1,10 @@
-# SER Stage 3 Test — Cache + Custom Events
+# SER Stage 4 Refinement — Editing + Interface + Sound
 
-Adds:
-- service-worker app-shell caching for offline loading after first successful load
-- ADD CASE persistence using browser localStorage
-- SAVED CASES view
-- reopen custom cases after refresh
-- case status and date persistence
+Adds to Stage 3:
+- Custom in-application dropdown controls replacing native iOS select presentation.
+- Edit Case workflow for saved custom cases.
+- Case updates persist in localStorage.
+- Simple generated Web Audio UI sounds with SOUND ON/OFF.
+- Existing cache/offline behavior retained.
 
-No cloud database or cross-device sync is used in this prototype.
+Demo/reference cases remain read-only in this test. Printing is intentionally reserved for a later build.
