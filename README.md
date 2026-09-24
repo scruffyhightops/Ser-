@@ -1,15 +1,23 @@
-# SER Stage 7.2 — Case Database Consolidation v0.72
+# SER Stage 7.2.1 — Case Database Housekeeping
 
-Built from the verified SER Stage 7.1.3 repair baseline.
+Built from the known-good SER Stage 7.2 case database.
 
-## Changes
-- Consolidates demo cases and user-created local cases into one CASE LIST.
-- Removes the separate user-facing SAVED navigation destination.
-- Adds case search across Case ID, location, site, case type, subtype, classification, status, observation and source.
-- Adds basic CASE TYPE, STATUS and CLASSIFICATION filters.
-- Demo cases and user-created cases use the same list/rendering workflow.
-- Existing local case editing, evidence, observations, timeline, analysis, notes, sound and date/time systems are retained.
-- Keeps the legacy Saved section internally for compatibility; it is no longer exposed in the main navigation.
+## Housekeeping
+- Removed the obsolete SAVED LOCAL CASES view; CASE LIST is the single case database doorway.
+- Kept demo, local and future imported cases on the same case structure.
+- Added structured location parsing behind the single visible LOCATION field.
+- Location entry is stored as display text plus CITY / REGION / COUNTRY / COUNTRY CODE when the entry is sufficiently structured.
+- Existing local cases are automatically normalised on load.
+- Case search also searches the structured location fields.
+- Preserved existing custom dropdowns, sounds, date/time formatting, evidence, observations, timeline, analysis, notes and case editing.
 
-## Notes
-This is a database/navigation consolidation release only. Stage 8 intelligence features are intentionally not included.
+## Location entry example
+`Portsmouth, New Hampshire, United States`
+
+becomes searchable internally as:
+- CITY: Portsmouth
+- REGION: New Hampshire
+- COUNTRY: United States
+- COUNTRY CODE: US
+
+No separate Country field is added to the normal case form.

@@ -87,9 +87,6 @@ label{display:block;color:var(--muted);font-size:11px;margin:8px 0 4px}
 <div id="caseList" class="list"></div>
 </section>
 
-<section id="saved" class="view">
-<div class="panel"><h2>SAVED LOCAL CASES</h2><div class="mini">Legacy view retained internally for compatibility. All saved cases now appear in CASE LIST.</div><div id="savedCases" class="list" style="margin-top:10px"></div></div>
-</section>
 
 <section id="overview" class="view">
 <div class="grid">
@@ -190,11 +187,38 @@ let selectedType='AWE — ALTERED WORLD EVENT';
 let soundEnabled=localStorage.getItem('ser_sound')!=='off', audioCtx=null, currentCase=null;
 function toggleSound(){soundEnabled=!soundEnabled;localStorage.setItem('ser_sound',soundEnabled?'on':'off');const b=document.getElementById('soundBtn');if(b)b.textContent=soundEnabled?'SOUND ON':'SOUND OFF';if(soundEnabled)uiSound('save');}
 
+function parseLocation(value){
+ const raw=String(value||'').trim().replace(/\s+/g,' ');
+ const parts=raw.split(',').map(x=>x.trim()).filter(Boolean);
+ let city=parts[0]||'';
+ let region=parts.length>=3?parts[1]:(parts.length===2?parts[0]:'');
+ let country=parts.length>=3?parts.slice(2).join(', '):(parts.length===2?parts[1]:'');
+ const countryMap={
+  'united kingdom':'GB','uk':'GB','great britain':'GB','england':'GB','scotland':'GB','wales':'GB','northern ireland':'GB',
+  'united states':'US','usa':'US','us':'US','canada':'CA','australia':'AU','new zealand':'NZ','ireland':'IE',
+  'france':'FR','germany':'DE','spain':'ES','italy':'IT','netherlands':'NL','belgium':'BE','norway':'NO','sweden':'SE','denmark':'DK',
+  'finland':'FI','poland':'PL','portugal':'PT','switzerland':'CH','austria':'AT','japan':'JP','china':'CN','india':'IN'
+ };
+ const key=country.toLowerCase();
+ return {location:raw,city,region,country,countryCode:countryMap[key]||''};
+}
+function enrichCaseLocation(c){
+ const parsed=parseLocation(c.loc||'');
+ return {...c,loc:parsed.location||c.loc||'',locCity:parsed.city,locRegion:parsed.region,locCountry:parsed.country,locCountryCode:parsed.countryCode};
+}
+function normaliseStoredCases(){
+ const cases=getSaved();
+ let changed=false;
+ const out=cases.map(c=>{const n=enrichCaseLocation(c);if(n.locCity!==c.locCity||n.locRegion!==c.locRegion||n.locCountry!==c.locCountry||n.locCountryCode!==c.locCountryCode)changed=true;return n;});
+ if(changed)saveCases(out);
+ return out;
+}
+
 function saveEditedCase(){
   if(!currentCase)return;
   const oldId=currentCase.id;
   const newId=document.getElementById('editid').value.trim()||oldId;
-  const c={...currentCase,id:newId,loc:document.getElementById('editloc').value.trim()||'UNSPECIFIED',site:document.getElementById('editsite').value.trim(),date:formatDate(document.getElementById('editdate').value),time:formatTime(document.getElementById('editTime').value),status:document.getElementById('editstatus').value,type:document.getElementById('edittype').value,sub:document.getElementById('editsub').value.trim()||'UNKNOWN',cls:document.getElementById('editclass').value,obs:document.getElementById('editobs').value.trim(),updated:new Date().toISOString()};
+  const c=enrichCaseLocation({...currentCase,id:newId,loc:document.getElementById('editloc').value.trim()||'UNSPECIFIED',site:document.getElementById('editsite').value.trim(),date:formatDate(document.getElementById('editdate').value),time:formatTime(document.getElementById('editTime').value),status:document.getElementById('editstatus').value,type:document.getElementById('edittype').value,sub:document.getElementById('editsub').value.trim()||'UNKNOWN',cls:document.getElementById('editclass').value,obs:document.getElementById('editobs').value.trim(),updated:new Date().toISOString()});
   saveCases([c,...getSaved().filter(x=>x.id!==oldId&&x.id!==newId)]);
   if(oldId!==newId)migrateCaseData(oldId,newId);
   currentCase=c;loadSavedCase(c);renderSaved();renderCaseList();show('overview');uiSound('save');toast('CASE UPDATED');
@@ -204,6 +228,7 @@ const demos={
 'SE-0261':{id:'SE-0261',loc:'Portsmouth, Hampshire',site:'Portsmouth Harbour Sector',type:'AWE — ALTERED WORLD EVENT',sub:'UNKNOWN',cls:'UNRESOLVED',status:'ACTIVE INVESTIGATION',obs:'Unusual localized field disturbance reported during routine monitoring. PKE Field Analyser readings subsequently confirmed elevated activity.'},
 'SE-1977':{id:'HIST-ENFIELD',loc:'Enfield, London',site:'Enfield Residential Investigation Area',type:'PKE — PSYCHOKINETIC EVENT',sub:'POLTERGEIST',cls:'HISTORICAL / DISPUTED',status:'RESEARCH',obs:'Historical reports describe alleged unexplained disturbances. SER records the case as a research subject; reported phenomena are not treated as established fact.'}
 };
+Object.keys(demos).forEach(k=>{demos[k]=enrichCaseLocation(demos[k]);});
 function show(id,btn){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');if(btn){document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}if(id==='cases')renderCaseList()}
 function loadDemo(id){let c=demos[id];if(!c)return;currentCase=null;document.getElementById('caseid').textContent=c.id;document.getElementById('location').textContent=c.loc;document.getElementById('ctype').textContent=c.type;document.getElementById('subtype').textContent=c.sub;document.getElementById('classif').textContent=c.cls;document.getElementById('caseStatus').textContent=c.status||'OPEN';document.getElementById('obstext').textContent=c.obs;loadNotes();renderEvidence();renderObservations();renderTimeline();renderAnalysis();show('overview');uiSound('open')}
 function openCase(id){const c=demos[id];if(c){loadDemo(id);return;}const saved=getSaved().find(x=>x.id===id);if(saved){loadSavedCase(saved);uiSound('open')}}
@@ -221,7 +246,7 @@ function renderCaseList(){
  const status=(document.getElementById('caseFilterStatus')?.value||'').trim().toLowerCase();
  const cls=(document.getElementById('caseFilterClass')?.value||'').trim().toLowerCase();
  const cases=allCases().filter(c=>{
-  const hay=[c.id,c.loc,c.site,c.type,c.sub,c.cls,c.obs,c.status,c.source].join(' ').toLowerCase();
+  const hay=[c.id,c.loc,c.locCity,c.locRegion,c.locCountry,c.locCountryCode,c.site,c.type,c.sub,c.cls,c.obs,c.status,c.source].join(' ').toLowerCase();
   return (!q||hay.includes(q))&&(!type||caseTypeCode(c.type).toLowerCase()===type)&&(!status||String(c.status||'').toLowerCase()===status)&&(!cls||String(c.cls||'').toLowerCase()===cls);
  });
  box.innerHTML='';
@@ -371,7 +396,7 @@ function beginEdit(id){
 }
 function createCase(){
   const id=document.getElementById('newid').value.trim()||'SE-NEW';
-  const c={id,loc:document.getElementById('newloc').value.trim()||'UNSPECIFIED',site:document.getElementById('newsite').value.trim(),sub:document.getElementById('newsub').value||'UNKNOWN',obs:document.getElementById('newobs').value.trim()||'No initial observation entered.',type:selectedType,cls:'UNRESOLVED',status:document.getElementById('newstatus').value,date:formatDate(document.getElementById('newdate').value),time:formatTime(document.getElementById('newtime')?.value),created:new Date().toISOString()};
+  const c=enrichCaseLocation({id,loc:document.getElementById('newloc').value.trim()||'UNSPECIFIED',site:document.getElementById('newsite').value.trim(),sub:document.getElementById('newsub').value||'UNKNOWN',obs:document.getElementById('newobs').value.trim()||'No initial observation entered.',type:selectedType,cls:'UNRESOLVED',status:document.getElementById('newstatus').value,date:formatDate(document.getElementById('newdate').value),time:formatTime(document.getElementById('newtime')?.value),created:new Date().toISOString()});
   saveCases([c,...getSaved().filter(x=>x.id!==id)]);loadSavedCase(c);renderSaved();renderCaseList();show('overview');uiSound('save');
 }
 
@@ -381,7 +406,7 @@ function renderSaved(){
   cases.forEach(c=>{const row=document.createElement('div');row.className='row';const info=document.createElement('div');const title=document.createElement('b');title.textContent=c.id;info.append(title,document.createTextNode(' — '+(c.loc||'UNSPECIFIED')));const mini=document.createElement('div');mini.className='mini';mini.textContent=(c.type||'UNCLASSIFIED')+' / '+(c.status||'OPEN');info.appendChild(mini);const btn=document.createElement('button');btn.type='button';btn.className='small';btn.textContent='OPEN';btn.onclick=e=>{e.stopPropagation();loadSavedCase(c);uiSound('open')};row.append(info,btn);box.appendChild(row);});
 }
 function openSaved(id){let c=getSaved().find(x=>x.id===decodeURIComponent(id));if(c)loadSavedCase(c)}
-renderSaved();convertSelects();setupDateTimeInputs();renderEvidence();renderObservations();renderTimeline();renderAnalysis();loadNotes();renderCaseList();
+normaliseStoredCases();convertSelects();setupDateTimeInputs();renderEvidence();renderObservations();renderTimeline();renderAnalysis();loadNotes();renderCaseList();
 ['caseSearch','caseFilterType','caseFilterStatus','caseFilterClass'].forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener(id==='caseSearch'?'input':'change',renderCaseList);}});
 function currentEvidenceKey(){return 'ser_evidence_'+(document.getElementById('caseid')?.textContent||'SE-0261')}
 function getEvidence(){try{return JSON.parse(localStorage.getItem(currentEvidenceKey())||'[]')}catch(e){return[]}}
