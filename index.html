@@ -183,7 +183,8 @@ label{display:block;color:var(--muted);font-size:11px;margin:8px 0 4px}
 </div>
 <script>
 let selectedType='AWE — ALTERED WORLD EVENT';
-let soundEnabled=true, audioCtx=null, currentCase=null;
+let soundEnabled=localStorage.getItem('ser_sound')!=='off', audioCtx=null, currentCase=null;
+function toggleSound(){soundEnabled=!soundEnabled;localStorage.setItem('ser_sound',soundEnabled?'on':'off');const b=document.getElementById('soundBtn');if(b)b.textContent=soundEnabled?'SOUND ON':'SOUND OFF';if(soundEnabled)uiSound('save');}
 
 function saveEditedCase(){
   if(!currentCase)return;
@@ -220,7 +221,8 @@ function editCurrentCase(){
   document.getElementById('editclass').value=c.cls||'UNRESOLVED';
   document.getElementById('editobs').value=c.obs||'';
   show('editcase');
-  setTimeout(convertSelects,0);
+  syncAllCustomSelects();
+  setupDateTimeInputs();
   uiSound('edit');
 }
 
@@ -267,6 +269,33 @@ function uiSound(kind='tap'){
   o.connect(g);g.connect(a.destination);o.start(now);o.stop(now+.1);
  }catch(e){}
 }
+function syncCustomSelect(sel){
+ const wrap=sel&&sel._serWrap; if(!wrap)return;
+ const btn=wrap.querySelector('.xselect-btn');
+ if(btn)btn.textContent=sel.options[sel.selectedIndex]?.text||'';
+ wrap.querySelectorAll('.xoption').forEach((x,i)=>x.classList.toggle('active',i===sel.selectedIndex));
+}
+function convertSelects(){
+ document.querySelectorAll('select').forEach(sel=>{
+  if(sel.dataset.customized){syncCustomSelect(sel);return;}
+  sel.dataset.customized='1';
+  const wrap=document.createElement('div');wrap.className='xselect';
+  const btn=document.createElement('button');btn.type='button';btn.className='xselect-btn';
+  const menu=document.createElement('div');menu.className='xselect-menu';
+  Array.from(sel.options).forEach((op,i)=>{
+   const d=document.createElement('div');d.className='xoption'+(i===sel.selectedIndex?' active':'');d.textContent=op.text;
+   d.addEventListener('click',()=>{
+    sel.value=op.value;sel.dispatchEvent(new Event('change',{bubbles:true}));syncCustomSelect(sel);wrap.classList.remove('open');uiSound('select');
+   });
+   menu.appendChild(d);
+  });
+  btn.addEventListener('click',()=>{document.querySelectorAll('.xselect.open').forEach(x=>x!==wrap&&x.classList.remove('open'));wrap.classList.toggle('open');uiSound('tap');});
+  wrap.append(btn,menu);sel._serWrap=wrap;sel.style.display='none';sel.parentNode.insertBefore(wrap,sel.nextSibling);syncCustomSelect(sel);
+ });
+}
+function syncAllCustomSelects(){document.querySelectorAll('select[data-customized]').forEach(syncCustomSelect);}
+document.addEventListener('click',e=>{if(!e.target.closest('.xselect'))document.querySelectorAll('.xselect.open').forEach(x=>x.classList.remove('open'));});
+
 function formatDate(value){
  const digits=String(value||'').replace(/\D/g,'').slice(0,8);
  if(digits.length<=2)return digits;
@@ -279,8 +308,16 @@ function formatTime(value){
  return digits.slice(0,2)+':'+digits.slice(2,4);
 }
 function setupDateTimeInputs(){
- ['newdate','editdate','evDate','obDate','tlDate'].forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener('input',()=>el.value=formatDate(el.value));el.addEventListener('blur',()=>el.value=formatDate(el.value));}});
- ['newtime','editTime','evTime','obTime','tlTime'].forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener('input',()=>el.value=formatTime(el.value));el.addEventListener('blur',()=>el.value=formatTime(el.value));}});
+ ['newdate','editdate','evDate','obDate','tlDate'].forEach(id=>{
+  const el=document.getElementById(id); if(!el||el.dataset.dtBound)return; el.dataset.dtBound='1';
+  el.addEventListener('input',()=>{const pos=el.selectionStart;const before=el.value;el.value=formatDate(el.value);try{el.setSelectionRange(el.value.length,el.value.length)}catch(e){}});
+  el.addEventListener('blur',()=>{el.value=formatDate(el.value)});
+ });
+ ['newtime','editTime','evTime','obTime','tlTime'].forEach(id=>{
+  const el=document.getElementById(id); if(!el||el.dataset.dtBound)return; el.dataset.dtBound='1';
+  el.addEventListener('input',()=>{el.value=formatTime(el.value)});
+  el.addEventListener('blur',()=>{el.value=formatTime(el.value)});
+ });
 }
 function beginEdit(id){
   const c=getSaved().find(x=>x.id===id);
@@ -346,14 +383,25 @@ function saveTimelineEntry(){const title=document.getElementById('tlTitle').valu
 function addAutoTimeline(title,detail,date,time){let a=readLocal('ser_timeline');a.push({date:formatDate(date),time:formatTime(time),title,detail,created:new Date().toISOString(),auto:true});writeLocal('ser_timeline',a);renderTimeline()}
 function renderTimeline(){const box=document.getElementById('timelineList');if(!box)return;let a=readLocal('ser_timeline');if(!a.length){a=[{time:'14:12',title:'Initial report',detail:'Unusual environmental disturbance recorded.'},{time:'14:18',title:'PKE detection',detail:'Field analyser registered elevated activity.'},{time:'14:26',title:'ANOMALY',detail:'Transient pulse detected; event behaviour changed.'},{time:'14:41',title:'Research case opened',detail:'Event assigned AWE / unresolved.'}]}a.sort((x,y)=>((x.date||'').localeCompare(y.date||''))||((x.time||'').localeCompare(y.time||'')));box.innerHTML=a.map(e=>`<div class="event"><div class="time">${esc(e.date||'')}${e.time?' '+esc(e.time):''}</div><b>${esc(e.title)}</b><div class="mini">${esc(e.detail||'')}</div></div>`).join('')}
 function saveAnalysis(){const data={hypothesis:document.getElementById('hypothesis').value.trim(),type:document.getElementById('analysisType').value,classification:document.getElementById('analysisClass').value,saved:new Date().toISOString()};localStorage.setItem(caseKey('ser_analysis'),JSON.stringify(data));renderAnalysis();uiSound('save');toast('ANALYSIS SAVED')}
-function renderAnalysis(){let d={};try{d=JSON.parse(localStorage.getItem(caseKey('ser_analysis'))||'{}')}catch(e){}if(d.hypothesis!==undefined)document.getElementById('hypothesis').value=d.hypothesis;if(d.type)document.getElementById('analysisType').value=d.type;if(d.classification)document.getElementById('analysisClass').value=d.classification;const st=document.getElementById('analysisStatus');if(st)st.innerHTML=d.saved?'<span class="tag">ANALYSIS SAVED</span>':'<span class="tag">NO ANALYSIS SAVED</span>';renderAnalysisEvidence()}
+function renderAnalysis(){let d={};try{d=JSON.parse(localStorage.getItem(caseKey('ser_analysis'))||'{}')}catch(e){}if(d.hypothesis!==undefined)document.getElementById('hypothesis').value=d.hypothesis;if(d.type)document.getElementById('analysisType').value=d.type;if(d.classification)document.getElementById('analysisClass').value=d.classification;syncAllCustomSelects();const st=document.getElementById('analysisStatus');if(st)st.innerHTML=d.saved?'<span class="tag">ANALYSIS SAVED</span>':'<span class="tag">NO ANALYSIS SAVED</span>';renderAnalysisEvidence()}
 function renderAnalysisEvidence(){const a=getEvidence();const support=document.getElementById('supportingEvidence'),contra=document.getElementById('contradictingEvidence');if(!support||!contra)return;const make=(e,i,role,action)=>`<div class="row"><div><b>${esc(e.id)}</b><div class="mini">${esc(e.type)} / ${esc(e.description)}</div></div><div><button class="small" onclick="markEvidence(${i},'${action}')">${role}</button></div></div>`;const sa=a.filter(e=>e.analysisRole==='support'),ca=a.filter(e=>e.analysisRole==='contra');support.innerHTML=sa.length?sa.map(e=>make(e,a.indexOf(e),'REMOVE','none')).join(''):(a.length?'<div class="mini">No evidence marked as supporting.</div>':'<div class="mini">No evidence records available.</div>');contra.innerHTML=ca.length?ca.map(e=>make(e,a.indexOf(e),'REMOVE','none')).join(''):(a.length?'<div class="mini">No evidence marked as contradicting.</div>':'<div class="mini">No evidence records available.</div>');if(!sa.length||!ca.length){const chooser=a.filter(e=>!e.analysisRole);const target=!sa.length?'support':'contra';const heading=!sa.length?'Add supporting evidence':'Add contradicting evidence';const targetBox=!sa.length?support:contra;if(chooser.length)targetBox.innerHTML+=(targetBox.innerHTML?`<div class="mini" style="margin:8px 0">${heading}</div>`:'')+chooser.map(e=>make(e,a.indexOf(e),target==='support'?'SUPPORT':'CONTRADICT',target)).join('')}}
 function markEvidence(i,kind){let a=getEvidence();if(!a[i])return;a[i].analysisRole=kind==='none'?undefined:kind;saveEvidenceData(a);renderAnalysisEvidence();renderEvidence();uiSound('select')}
 function saveNotes(){const v=document.getElementById('notesText').value;localStorage.setItem(caseKey('ser_notes'),v);uiSound('save');toast('NOTES SAVED')}
 function loadNotes(){const v=localStorage.getItem(caseKey('ser_notes'));if(v!==null)document.getElementById('notesText').value=v}
 function updateEvidenceSummary(){const a=getEvidence();const count=document.getElementById('evidenceCount');if(count)count.textContent=a.length;const st=document.getElementById('evidenceStatus');if(st)st.textContent=a.length?'RECORDED':'NO RECORDS';const sources=document.getElementById('evidenceSources');if(sources){const set=[...new Set(a.map(e=>e.source).filter(Boolean))];sources.textContent=set.length?set.join(' / '):'—'}}
 
-document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;uiSound(b.classList.contains('danger')?'error':(b.classList.contains('primary')?'confirm':'tap'));},{capture:true});
+document.addEventListener('click',e=>{
+ const b=e.target.closest('button'); if(!b)return;
+ const oc=b.getAttribute('onclick')||'';
+ let kind='tap';
+ if(b.classList.contains('danger')||oc.includes('delete')) kind='error';
+ else if(oc.includes('pickType')||oc.includes('select')) kind='select';
+ else if(oc.includes('save')||oc.includes('createCase')||oc.includes('toggleSound')) kind='save';
+ else if(oc.includes('loadDemo')||oc.includes("show('overview")||oc.includes('open')) kind='open';
+ else if(oc.includes('edit')) kind='edit';
+ else if(b.classList.contains('primary')) kind='save';
+ uiSound(kind);
+},{capture:true});
 </script>
 <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
 </body></html>
