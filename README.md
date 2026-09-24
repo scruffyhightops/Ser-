@@ -1,10 +1,13 @@
-# SER Stage 4 Refinement — Editing + Interface + Sound
+SER Stage 7.1.1 — Repair Build
 
-Adds to Stage 3:
-- Custom in-application dropdown controls replacing native iOS select presentation.
-- Edit Case workflow for saved custom cases.
-- Case updates persist in localStorage.
-- Simple generated Web Audio UI sounds with SOUND ON/OFF.
-- Existing cache/offline behavior retained.
+Repair-only release based on the supplied SER HTML.
 
-Demo/reference cases remain read-only in this test. Printing is intentionally reserved for a later build.
+Fixed:
+- Saved case OPEN control
+- Duplicate edit logic
+- Dedicated Edit Case persistence
+- Case ID data migration
+- Duplicate sound engine/listener
+- Official SER name: Spectral Event Research
+
+No Stage 8 features added.
