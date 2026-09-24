@@ -1,7 +1,10 @@
-# SER Stage 1 — PKE-derived design mock-up
+# SER Stage 3 Test — Cache + Custom Events
 
-Standalone visual prototype. It deliberately uses the PKE's restrained palette,
-limited typography, rectangular instrument panels and technical layout language,
-while making SER a case/research application rather than another live analyser.
+Adds:
+- service-worker app-shell caching for offline loading after first successful load
+- ADD CASE persistence using browser localStorage
+- SAVED CASES view
+- reopen custom cases after refresh
+- case status and date persistence
 
-No external libraries, database or PKE integration are included.
+No cloud database or cross-device sync is used in this prototype.

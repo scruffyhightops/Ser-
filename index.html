@@ -61,6 +61,7 @@ label{display:block;color:var(--muted);font-size:11px;margin:8px 0 4px}
 <button onclick="show('timeline',this)">Timeline</button>
 <button onclick="show('analysis',this)">Analysis</button>
 <button onclick="show('notes',this)">Notes</button>
+<button onclick="show('saved',this);renderSaved()">Saved</button>
 </nav>
 
 <section id="cases" class="view active">
@@ -72,6 +73,10 @@ label{display:block;color:var(--muted);font-size:11px;margin:8px 0 4px}
 <div class="row" onclick="loadDemo('SE-0261')"><div><b>SE-0261</b> — Portsmouth, Hampshire<div class="mini">SPECIAL EVENT RESPONSE / ACTIVE INVESTIGATION</div></div><span class="tag awe">AWE</span></div>
 <div class="row" onclick="loadDemo('SE-1977')"><div><b>HIST-ENFIELD</b> — Enfield, London<div class="mini">HISTORICAL CASE / RESEARCH</div></div><span class="tag pke">PKE</span></div>
 </div>
+</section>
+
+<section id="saved" class="view">
+<div class="panel"><h2>SAVED LOCAL CASES</h2><div class="mini">Custom cases are stored on this device.</div><div id="savedCases" class="list" style="margin-top:10px"></div></div>
 </section>
 
 <section id="overview" class="view">
@@ -110,6 +115,7 @@ label{display:block;color:var(--muted);font-size:11px;margin:8px 0 4px}
 <label>LOCATION</label><input id="newloc" value="Portsmouth, Hampshire">
 <label>INVESTIGATION SITE</label><input id="newsite" placeholder="Enter site">
 <label>DATE / TIME</label><input id="newdate" type="datetime-local">
+<label>CASE STATUS</label><select id="newstatus"><option>ACTIVE INVESTIGATION</option><option>OPEN</option><option>SUSPENDED</option><option>CLOSED</option><option>HISTORICAL</option></select>
 <label>RESPONSE TYPE</label><select><option>SPECIAL EVENT RESPONSE</option><option>ENTITY INVESTIGATION</option><option>SITE INVESTIGATION</option><option>PARANORMAL ACTIVITY RESPONSE</option></select>
 <label>CASE TYPE</label>
 <div class="typegrid" id="typegrid">
@@ -140,10 +146,17 @@ const demos={
 function show(id,btn){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById(id).classList.add('active');if(btn){document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}}
 function loadDemo(id){let c=demos[id];if(!c)return;document.getElementById('caseid').textContent=c.id;document.getElementById('location').textContent=c.loc;document.getElementById('ctype').textContent=c.type;document.getElementById('subtype').textContent=c.sub;document.getElementById('classif').textContent=c.cls;document.getElementById('obstext').textContent=c.obs;show('overview')}
 function pickType(el,type){selectedType=type;document.querySelectorAll('#typegrid button').forEach(b=>b.classList.remove('selected'));el.classList.add('selected')}
-function createCase(){let id=document.getElementById('newid').value||'SE-NEW';let loc=document.getElementById('newloc').value||'UNSPECIFIED';let sub=document.getElementById('newsub').value||'UNKNOWN';document.getElementById('caseid').textContent=id;document.getElementById('location').textContent=loc;document.getElementById('ctype').textContent=selectedType;document.getElementById('subtype').textContent=sub;document.getElementById('classif').textContent='UNRESOLVED';document.getElementById('obstext').textContent=document.getElementById('newobs').value||'No initial observation entered.';show('overview')}
+function getSaved(){try{return JSON.parse(localStorage.getItem('ser_cases')||'[]')}catch(e){return[]}}
+function saveCases(a){localStorage.setItem('ser_cases',JSON.stringify(a))}
+function loadSavedCase(c){document.getElementById('caseid').textContent=c.id;document.getElementById('location').textContent=c.loc;document.getElementById('ctype').textContent=c.type;document.getElementById('subtype').textContent=c.sub;document.getElementById('classif').textContent=c.cls;document.getElementById('obstext').textContent=c.obs;show('overview')}
+function createCase(){let c={id:document.getElementById('newid').value||'SE-NEW',loc:document.getElementById('newloc').value||'UNSPECIFIED',site:document.getElementById('newsite').value||'',sub:document.getElementById('newsub').value||'UNKNOWN',obs:document.getElementById('newobs').value||'No initial observation entered.',type:selectedType,cls:'UNRESOLVED',status:document.getElementById('newstatus').value,date:document.getElementById('newdate').value,created:new Date().toISOString()};let a=getSaved().filter(x=>x.id!==c.id);a.unshift(c);saveCases(a);loadSavedCase(c);renderSaved();show('overview')}
+function renderSaved(){let b=document.getElementById('savedCases');if(!b)return;let a=getSaved();b.innerHTML=a.length?a.map(c=>'<div class="row"><div><b>'+c.id+'</b> — '+c.loc+'<div class="mini">'+c.type+' / '+c.status+'</div></div><button class="small" onclick="openSaved(\''+encodeURIComponent(c.id)+'\')">OPEN</button></div>').join(''):'<div class="mini">No custom cases saved on this device.</div>'}
+function openSaved(id){let c=getSaved().find(x=>x.id===decodeURIComponent(id));if(c)loadSavedCase(c)}
+renderSaved()
 function addEvidence(){let n=document.querySelectorAll('#evidenceList .row').length+1;let d=document.createElement('div');d.className='row evidence';d.innerHTML='<div><b>EVIDENCE RECORD #00'+n+'</b><div class="mini">SOURCE: PKE FIELD ANALYSER / IMPORTED DATA SET</div></div><span class="ok">VERIFIED</span>';document.getElementById('evidenceList').appendChild(d)}
 function saveAnalysis(){alert('Analysis saved locally for this test case.')}
 function saveNotes(){alert('Research notes saved locally for this test case.')}
 addEvidence();addEvidence();
 </script>
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
 </body></html>
