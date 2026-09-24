@@ -46,6 +46,7 @@ label{display:block;color:var(--muted);font-size:11px;margin:8px 0 4px}
 .footer{color:#666c65;text-align:center;font-size:10px;padding:10px}
 .xselect{position:relative}.xselect-btn{width:100%;background:#080908;border:1px solid #646a63;padding:9px;text-align:left;position:relative}.xselect-btn:after{content:"▾";position:absolute;right:9px;color:#9da39a}.xselect-menu{display:none;position:absolute;left:0;right:0;top:100%;z-index:30;background:#101210;border:1px solid #777d76;max-height:220px;overflow:auto}.xselect.open .xselect-menu{display:block}.xoption{padding:9px;border-bottom:1px solid #343934;cursor:pointer}.xoption:hover,.xoption.active{background:#20251f;color:var(--amber)}
 .editbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.evidence-detail{margin-top:8px;line-height:1.45}.evidence-detail .mini{margin-bottom:3px}.evidence-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 @media(max-width:700px){.grid,.formgrid{grid-template-columns:1fr}.nav{grid-template-columns:repeat(3,1fr)}.kv{grid-template-columns:120px 1fr}.typegrid{grid-template-columns:1fr 1fr}}
 
 .subtype-note{color:var(--muted);font-size:11px;margin:5px 0 8px}
@@ -111,7 +112,25 @@ label{display:block;color:var(--muted);font-size:11px;margin:8px 0 4px}
 </div>
 </section>
 
-<section id="evidence" class="view"><div class="panel"><h2>EVIDENCE REGISTER</h2><div class="toolbar"><button class="primary" onclick="addEvidence()">+ Add Evidence</button></div><div id="evidenceList" class="list" style="margin-top:10px"></div></div></section>
+<section id="evidence" class="view">
+<div class="panel">
+<h2>EVIDENCE REGISTER</h2>
+<div class="toolbar"><button class="primary" onclick="openEvidenceForm()">+ ADD EVIDENCE</button></div>
+<div id="evidenceForm" class="panel" style="display:none;margin-top:10px;margin-bottom:0">
+<h2>NEW EVIDENCE RECORD</h2>
+<div class="formgrid">
+<div><label>EVIDENCE TYPE</label><input id="evType" placeholder="e.g. PKE reading, photograph, witness statement"></div>
+<div><label>SOURCE</label><input id="evSource" placeholder="e.g. PKE FIELD ANALYSER / WITNESS / FIELD TEAM"></div>
+<div><label>DATE</label><input id="evDate" type="text" placeholder="DD/MM/YYYY" inputmode="numeric" maxlength="10"></div>
+<div><label>TIME</label><input id="evTime" type="text" placeholder="HH:MM" inputmode="numeric" maxlength="5"></div>
+<div class="full"><label>OBSERVATION / EVIDENCE DESCRIPTION</label><textarea id="evDescription" rows="6" placeholder="Enter the evidence and what was observed."></textarea></div>
+<div class="full"><label>RESEARCHER NOTES</label><textarea id="evNotes" rows="4" placeholder="Optional notes, context, or follow-up requirements."></textarea></div>
+</div>
+<div class="toolbar"><button class="primary" onclick="saveEvidence()">SAVE EVIDENCE</button><button onclick="closeEvidenceForm()">CANCEL</button></div>
+</div>
+<div id="evidenceList" class="list" style="margin-top:10px"></div>
+</div>
+</section>
 <section id="timeline" class="view"><div class="panel"><h2>CASE TIMELINE</h2><div class="timeline"><div class="event"><div class="time">14:12</div><b>Initial report</b><div class="mini">Unusual environmental disturbance recorded.</div></div><div class="event"><div class="time">14:18</div><b>PKE detection</b><div class="mini">Field analyser registered elevated activity.</div></div><div class="event"><div class="time">14:26</div><b>ANOMALY</b><div class="mini">Transient pulse detected; event behaviour changed.</div></div><div class="event"><div class="time">14:41</div><b>Research case opened</b><div class="mini">Event assigned AWE / unresolved.</div></div></div></div></section>
 <section id="analysis" class="view"><div class="grid"><div class="panel"><h2>ANALYSIS</h2><label>WORKING HYPOTHESIS</label><textarea rows="6" id="hypothesis">Possible localized altered-world event. Current evidence is insufficient to determine origin or mechanism.</textarea><div class="toolbar"><button class="primary" onclick="saveAnalysis()">Save Analysis</button></div></div><div class="panel"><h2>CLASSIFICATION</h2><label>CASE TYPE</label><select id="analysisType"><option>AWE — Altered World Event</option><option>RP — Residual Phenomenon</option><option>PKE — Psychokinetic Event</option><option>EM — Entity Manifestation</option><option>AE — Anomalous Entity</option><option>EE — Ectoplasmic Event</option><option>LA — Location Anomaly</option><option>TA — Temporal Anomaly</option><option>EA — Environmental Anomaly</option></select><label>CLASSIFICATION</label><select><option>UNRESOLVED</option><option>PROVISIONAL</option><option>INSUFFICIENT DATA</option><option>CONFLICTING DATA</option><option>REQUIRES FIELD INVESTIGATION</option><option>MODEL FAILURE</option></select></div></div></section>
 <section id="notes" class="view"><div class="panel"><h2>RESEARCH NOTES</h2><textarea rows="14" id="notesText">Investigation remains open. Compare imported PKE traces against environmental observations and previous Portsmouth cases.</textarea><div class="toolbar"><button class="primary" onclick="saveNotes()">Save Notes</button></div></div></section>
@@ -133,7 +152,7 @@ label{display:block;color:var(--muted);font-size:11px;margin:8px 0 4px}
 <label>CASE ID</label><input id="newid" value="SE-0262">
 <label>LOCATION</label><input id="newloc" value="Portsmouth, Hampshire">
 <label>INVESTIGATION SITE</label><input id="newsite" placeholder="Enter site">
-<label>DATE</label><input id="newdate" type="text" placeholder="DD/MM/YYYY" inputmode="numeric" maxlength="10"><label>TIME</label><input id="newtime" type="text" placeholder="HH:MM" inputmode="numeric" maxlength="5">
+<label>DATE</label><input id="newdate" type="text" placeholder="DD/MM/YYYY" inputmode="numeric" maxlength="10" autocomplete="off"><label>TIME</label><input id="newtime" type="text" placeholder="HH:MM" inputmode="numeric" maxlength="5" autocomplete="off">
 <label>CASE STATUS</label><select id="newstatus"><option>ACTIVE INVESTIGATION</option><option>OPEN</option><option>SUSPENDED</option><option>CLOSED</option><option>HISTORICAL</option></select>
 <label>RESPONSE TYPE</label><select><option>SPECIAL EVENT RESPONSE</option><option>ENTITY INVESTIGATION</option><option>SITE INVESTIGATION</option><option>PARANORMAL ACTIVITY RESPONSE</option></select>
 <label>CASE TYPE</label>
@@ -207,8 +226,10 @@ function renderSubtypes(){
 
 let editingCaseId=null;
 function normaliseDate(s){return String(s||'').trim()}
+let lastSoundAt=0;
 function uiSound(kind='tap'){
  try{
+  const nowMs=performance.now(); if(nowMs-lastSoundAt<70)return; lastSoundAt=nowMs;
   if(localStorage.getItem('ser_sound')==='off') return;
   const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
   const a=window._serAudio||(window._serAudio=new C()); if(a.state==='suspended')a.resume();
@@ -220,14 +241,29 @@ function uiSound(kind='tap'){
   o.connect(g);g.connect(a.destination);o.start(now);o.stop(now+.1);
  }catch(e){}
 }
+function formatDate(value){
+ const digits=String(value||'').replace(/\D/g,'').slice(0,8);
+ if(digits.length<=2)return digits;
+ if(digits.length<=4)return digits.slice(0,2)+'/'+digits.slice(2);
+ return digits.slice(0,2)+'/'+digits.slice(2,4)+'/'+digits.slice(4,8);
+}
+function formatTime(value){
+ const digits=String(value||'').replace(/\D/g,'').slice(0,4);
+ if(digits.length<=2)return digits;
+ return digits.slice(0,2)+':'+digits.slice(2,4);
+}
+function setupDateTimeInputs(){
+ ['newdate','editdate','evDate'].forEach(id=>{const el=document.getElementById(id);if(!el)return;el.addEventListener('input',()=>{el.value=formatDate(el.value)});el.addEventListener('blur',()=>{el.value=formatDate(el.value)})});
+ ['newtime','editTime','evTime'].forEach(id=>{const el=document.getElementById(id);if(!el)return;el.addEventListener('input',()=>{el.value=formatTime(el.value)});el.addEventListener('blur',()=>{el.value=formatTime(el.value)})});
+}
 function beginEdit(id){
  let c=getSaved().find(x=>x.id===id); if(!c)return;
  editingCaseId=id;
  document.getElementById('newid').value=c.id;
  document.getElementById('newloc').value=c.loc||'';
  document.getElementById('newsite').value=c.site||'';
- document.getElementById('newdate').value=c.date||'';
- if(document.getElementById('newtime'))document.getElementById('newtime').value=c.time||'';
+ document.getElementById('newdate').value=formatDate(c.date||'');
+ if(document.getElementById('newtime'))document.getElementById('newtime').value=formatTime(c.time||'');
  document.getElementById('newsub').value=c.sub||'UNKNOWN';
  selectedType=c.type||'AWE — ALTERED WORLD EVENT'; selectedSubtype=c.sub||'UNKNOWN';
  document.getElementById('newobs').value=c.obs||'';
@@ -241,7 +277,7 @@ function createCase(){
  let c={id,loc:document.getElementById('newloc').value||'UNSPECIFIED',site:document.getElementById('newsite').value||'',
  sub:document.getElementById('newsub').value||'UNKNOWN',obs:document.getElementById('newobs').value||'No initial observation entered.',
  type:selectedType,cls:'UNRESOLVED',status:document.getElementById('newstatus').value,
- date:normaliseDate(document.getElementById('newdate').value),time:normaliseDate(document.getElementById('newtime')?.value),
+ date:formatDate(document.getElementById('newdate').value),time:formatTime(document.getElementById('newtime')?.value),
  created:new Date().toISOString()};
  let a=getSaved();
  if(editingCaseId && editingCaseId!==id)a=a.filter(x=>x.id!==editingCaseId);
@@ -251,11 +287,41 @@ function createCase(){
 
 function renderSaved(){let b=document.getElementById('savedCases');if(!b)return;let a=getSaved();b.innerHTML=a.length?a.map(c=>'<div class="row"><div><b>'+c.id+'</b> — '+c.loc+'<div class="mini">'+c.type+' / '+c.status+'</div></div><button class="small" onclick="beginEdit(decodeURIComponent(\''+encodeURIComponent(c.id)+'\')">OPEN</button></div>').join(''):'<div class="mini">No custom cases saved on this device.</div>'}
 function openSaved(id){let c=getSaved().find(x=>x.id===decodeURIComponent(id));if(c)loadSavedCase(c)}
-renderSaved();convertSelects()
-function addEvidence(){let n=document.querySelectorAll('#evidenceList .row').length+1;let d=document.createElement('div');d.className='row evidence';d.innerHTML='<div><b>EVIDENCE RECORD #00'+n+'</b><div class="mini">SOURCE: PKE FIELD ANALYSER / IMPORTED DATA SET</div></div><span class="ok">VERIFIED</span>';document.getElementById('evidenceList').appendChild(d)}
+renderSaved();convertSelects();setupDateTimeInputs();renderEvidence();
+function currentEvidenceKey(){return 'ser_evidence_'+(document.getElementById('caseid')?.textContent||'SE-0261')}
+function getEvidence(){try{return JSON.parse(localStorage.getItem(currentEvidenceKey())||'[]')}catch(e){return[]}}
+function saveEvidenceData(a){localStorage.setItem(currentEvidenceKey(),JSON.stringify(a))}
+function openEvidenceForm(){
+ document.getElementById('evidenceForm').style.display='block';
+ document.getElementById('evDate').value=document.getElementById('evDate').value||'';
+ document.getElementById('evTime').value=document.getElementById('evTime').value||'';
+ document.getElementById('evType').focus();
+ uiSound('open');
+}
+function closeEvidenceForm(){document.getElementById('evidenceForm').style.display='none';clearEvidenceForm();uiSound('tap')}
+function clearEvidenceForm(){['evType','evSource','evDate','evTime','evDescription','evNotes'].forEach(id=>{let el=document.getElementById(id);if(el)el.value=''})}
+function saveEvidence(){
+ const type=document.getElementById('evType').value.trim();
+ const source=document.getElementById('evSource').value.trim();
+ const description=document.getElementById('evDescription').value.trim();
+ if(!description){document.getElementById('evDescription').focus();uiSound('error');alert('Please enter an evidence description.');return}
+ const a=getEvidence();
+ const n=a.length+1;
+ a.push({id:'EVIDENCE RECORD #'+String(n).padStart(3,'0'),type:type||'UNSPECIFIED',source:source||'UNKNOWN SOURCE',date:formatDate(document.getElementById('evDate').value),time:formatTime(document.getElementById('evTime').value),description,notes:document.getElementById('evNotes').value.trim(),status:'RECORDED',created:new Date().toISOString()});
+ saveEvidenceData(a);renderEvidence();clearEvidenceForm();document.getElementById('evidenceForm').style.display='none';uiSound('save');
+}
+function renderEvidence(){
+ const box=document.getElementById('evidenceList'); if(!box)return;
+ const a=getEvidence();
+ if(!a.length){box.innerHTML='<div class="mini">No evidence records entered for this case.</div>';return}
+ box.innerHTML=a.map((e,i)=>`<div class="row evidence"><div><b>${esc(e.id)}</b><div class="mini">${esc(e.type)} / ${esc(e.source)}</div><div class="evidence-detail">${esc(e.description)}</div>${e.notes?`<div class="mini">NOTES: ${esc(e.notes)}</div>`:''}<div class="mini">${esc(e.date||'DATE NOT RECORDED')}${e.time?' / '+esc(e.time):''}</div></div><div><span class="ok">${esc(e.status)}</span><div class="evidence-actions"><button class="small danger" onclick="deleteEvidence(${i})">DELETE</button></div></div></div>`).join('');
+}
+function deleteEvidence(i){let a=getEvidence();if(!a[i])return;if(!confirm('Delete this evidence record?'))return;a.splice(i,1);a.forEach((e,j)=>e.id='EVIDENCE RECORD #'+String(j+1).padStart(3,'0'));saveEvidenceData(a);renderEvidence();uiSound('error')}
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function saveAnalysis(){alert('Analysis saved locally for this test case.')}
 function saveNotes(){alert('Research notes saved locally for this test case.')}
-addEvidence();addEvidence();
+
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;uiSound(b.classList.contains('danger')?'error':(b.classList.contains('primary')?'confirm':'tap'));},{capture:true});
 </script>
 <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
 </body></html>
