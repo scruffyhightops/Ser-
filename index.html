@@ -5,74 +5,145 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>SER — Special Event Research</title>
 <style>
-*{box-sizing:border-box} :root{--bg:#090909;--panel:#101010;--line:#666;--text:#e8e8e8;--dim:#999;--yellow:#f2d84b;--red:#e45a52;--green:#63c46a}
-body{margin:0;background:var(--bg);color:var(--text);font-family:"Courier New",Courier,monospace}
-button{font:inherit;color:var(--text);background:#111;border:1px solid var(--line);padding:10px 12px}
-.app{max-width:1100px;margin:auto;min-height:100vh;border-left:1px solid #333;border-right:1px solid #333}
-header{padding:16px 18px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
-.brand{font-family:Arial,sans-serif;font-weight:bold;letter-spacing:.08em;font-size:22px}.sub,.small{font-size:11px;color:var(--dim)}
-.status{font-size:11px;text-align:right}.status span{color:var(--green)}
-nav{display:flex;gap:6px;padding:9px;border-bottom:1px solid #444;overflow:auto}nav button{white-space:nowrap}nav button.active{color:var(--yellow);border-color:var(--yellow)}
-main{padding:12px;display:grid;grid-template-columns:1.25fr .75fr;gap:12px}.panel{border:1px solid var(--line);background:var(--panel)}
-h2{font-family:Arial,sans-serif;font-size:13px;letter-spacing:.08em;margin:0;padding:10px;border-bottom:1px solid #555}.pad{padding:12px}
-.caseid{font-size:11px;color:var(--dim)}.title{font-family:Arial,sans-serif;font-size:23px;margin:7px 0 14px}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);border-top:1px solid #444;border-left:1px solid #444}.cell{padding:10px;border-right:1px solid #444;border-bottom:1px solid #444;min-height:60px}.label{font-size:9px;color:var(--dim);margin-bottom:7px}.value{font-size:13px}
-.yellow{color:var(--yellow)}.red{color:var(--red)}.green{color:var(--green)}
-.list{display:grid;gap:7px}.row{border:1px solid #555;padding:9px;font-size:11px;display:flex;justify-content:space-between;gap:10px}
-.timeline{margin-left:7px;padding-left:18px;border-left:1px solid #777}.event{position:relative;padding-bottom:15px;font-size:11px}.event:before{content:"";position:absolute;left:-23px;top:2px;width:7px;height:7px;border:1px solid var(--text);background:var(--bg)}.time{color:var(--dim);margin-bottom:4px}
-.actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}.hidden{display:none}footer{padding:9px 14px;border-top:1px solid #444;color:#777;font-size:9px;display:flex;justify-content:space-between}
-@media(max-width:760px){main{grid-template-columns:1fr}.status{display:none}.title{font-size:20px}}
+:root{
+  --bg:#080908; --panel:#101210; --line:#6d736c; --text:#e2e4df; --muted:#9da39a;
+  --amber:#f0bd35; --yellow:#e5c84b; --red:#d65b4f; --green:#68bd72; --blue:#5b9bd5;
+}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:Courier New,monospace;font-size:14px}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{max-width:1100px;margin:auto;padding:14px}
+header{display:flex;justify-content:space-between;gap:12px;align-items:end;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:12px}
+.brand{font-family:Arial,sans-serif;letter-spacing:.14em;font-weight:700;font-size:20px}
+.sub{color:var(--muted);font-size:11px;margin-top:3px}
+.status{border:1px solid var(--line);padding:7px 10px;color:var(--amber);font-size:11px}
+.nav{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:12px}
+button{background:#151815;border:1px solid #777d76;padding:10px 8px;cursor:pointer;text-transform:uppercase;letter-spacing:.05em}
+button:hover,button.active{background:#20251f;border-color:#b9beb8}
+button.primary{border-color:var(--amber);color:var(--amber)}
+button.danger{border-color:var(--red);color:var(--red)}
+button.small{padding:7px 8px;font-size:11px}
+.view{display:none}.view.active{display:block}
+.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:10px}
+.panel{border:1px solid var(--line);background:var(--panel);padding:12px;margin-bottom:10px}
+.panel h2{font-family:Arial,sans-serif;font-size:13px;letter-spacing:.1em;margin:0 0 10px}
+.casehead{display:flex;justify-content:space-between;gap:10px;align-items:start}
+.caseid{font-size:22px;color:var(--amber)} .classification{border:1px solid var(--blue);color:var(--blue);padding:6px 8px;font-size:11px}
+.kv{display:grid;grid-template-columns:145px 1fr;gap:5px 10px}
+.k{color:var(--muted)} .value{color:var(--text)}
+.tags{display:flex;flex-wrap:wrap;gap:6px}.tag{border:1px solid #70756e;padding:4px 6px;font-size:11px}
+.tag.awe{border-color:var(--blue);color:var(--blue)} .tag.pke{border-color:var(--yellow);color:var(--yellow)}
+.timeline{border-left:1px solid #70756e;padding-left:14px}.event{margin:0 0 12px;position:relative}.event:before{content:"";position:absolute;left:-19px;top:3px;width:7px;height:7px;border:1px solid #aaa;background:var(--bg)}
+.time{color:var(--muted);font-size:11px}.event b{font-family:Arial,sans-serif}
+.list{display:grid;gap:6px}.row{display:grid;grid-template-columns:1fr auto;gap:8px;border:1px solid #555b55;padding:9px;background:#0d0f0d}.row:hover{border-color:#9da39a}
+.mini{font-size:11px;color:var(--muted)}.ok{color:var(--green)}.warn{color:var(--amber)}.err{color:var(--red)}
+textarea,input,select{width:100%;background:#080908;border:1px solid #646a63;padding:9px;outline:none}
+label{display:block;color:var(--muted);font-size:11px;margin:8px 0 4px}
+.typegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.typegrid button{text-align:left;min-height:54px}
+.typegrid button.selected{border-color:var(--blue);color:var(--blue);background:#111922}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.full{grid-column:1/-1}
+.toolbar{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.evidence{border-left:3px solid var(--yellow)} .observation{border-left:3px solid var(--green)} .anomaly{border-left:3px solid var(--red)}
+.footer{color:#666c65;text-align:center;font-size:10px;padding:10px}
+@media(max-width:700px){.grid,.formgrid{grid-template-columns:1fr}.nav{grid-template-columns:repeat(3,1fr)}.kv{grid-template-columns:120px 1fr}.typegrid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
 <div class="app">
-<header><div><div class="brand">SPECIAL EVENT RESEARCH</div><div class="sub">SER FIELD RESEARCH TERMINAL / STAGE 01</div></div><div class="status">SYSTEM <span>READY</span><br>CASE DATABASE LOCAL</div></header>
-<nav>
-<button class="active" data-tab="case">CASE</button><button data-tab="evidence">EVIDENCE</button><button data-tab="timeline">TIMELINE</button><button data-tab="analysis">ANALYSIS</button><button data-tab="notes">NOTES</button>
+<header>
+  <div><div class="brand">SER // SPECIAL EVENT RESEARCH</div><div class="sub">FIELD RESEARCH / CASE MANAGEMENT SYSTEM</div></div>
+  <div class="status">SYSTEM READY</div>
+</header>
+
+<nav class="nav">
+<button class="active" onclick="show('cases',this)">Cases</button>
+<button onclick="show('overview',this)">Case Overview</button>
+<button onclick="show('evidence',this)">Evidence</button>
+<button onclick="show('timeline',this)">Timeline</button>
+<button onclick="show('analysis',this)">Analysis</button>
+<button onclick="show('notes',this)">Notes</button>
 </nav>
-<main>
-<section class="panel tab case"><h2>CASE OVERVIEW</h2><div class="pad"><div class="caseid">CASE SE-0261</div><div class="title">UNRESOLVED SPECIAL EVENT</div>
-<div class="grid">
-<div class="cell"><div class="label">STATUS</div><div class="value yellow">ACTIVE INVESTIGATION</div></div>
-<div class="cell"><div class="label">CLASSIFICATION</div><div class="value">UNRESOLVED</div></div>
-<div class="cell"><div class="label">LOCATION</div><div class="value">PORTSMOUTH REGION</div></div>
-<div class="cell"><div class="label">INVESTIGATION SITE</div><div class="value">—</div></div>
-<div class="cell"><div class="label">FIRST DETECTED</div><div class="value">21:43</div></div>
-<div class="cell"><div class="label">DURATION</div><div class="value">00:17:32</div></div>
+
+<section id="cases" class="view active">
+<div class="panel">
+<h2>CASE FILES</h2>
+<div class="toolbar"><button class="primary" onclick="show('newcase')">+ Add Case</button><button onclick="loadDemo('SE-0261')">Open SE-0261</button><button onclick="loadDemo('SE-1977')">Open HIST-ENFIELD</button></div>
 </div>
-<div class="actions"><button onclick="alert('Field investigation request queued.')">REQUEST FIELD INVESTIGATION</button><button onclick="alert('PKE evidence import placeholder.')">IMPORT PKE EVIDENCE</button></div>
+<div class="list">
+<div class="row" onclick="loadDemo('SE-0261')"><div><b>SE-0261</b> — Portsmouth, Hampshire<div class="mini">SPECIAL EVENT RESPONSE / ACTIVE INVESTIGATION</div></div><span class="tag awe">AWE</span></div>
+<div class="row" onclick="loadDemo('SE-1977')"><div><b>HIST-ENFIELD</b> — Enfield, London<div class="mini">HISTORICAL CASE / RESEARCH</div></div><span class="tag pke">PKE</span></div>
+</div>
+</section>
+
+<section id="overview" class="view">
+<div class="grid">
+<div>
+<div class="panel">
+<div class="casehead"><div><div class="caseid" id="caseid">SE-0261</div><div class="mini" id="location">Portsmouth, Hampshire</div></div><div class="classification" id="classif">UNRESOLVED</div></div>
+<hr style="border:0;border-top:1px solid #454a45;margin:12px 0">
+<div class="kv">
+<div class="k">RESPONSE</div><div class="value">SPECIAL EVENT RESPONSE</div>
+<div class="k">CASE TYPE</div><div class="value" id="ctype">AWE — ALTERED WORLD EVENT</div>
+<div class="k">SUBTYPE</div><div class="value" id="subtype">UNKNOWN</div>
+<div class="k">STATUS</div><div class="value warn">ACTIVE INVESTIGATION</div>
+<div class="k">SITE</div><div class="value">Portsmouth Harbour Sector</div>
+</div>
+</div>
+<div class="panel"><h2>INITIAL OBSERVATION</h2><div id="obstext">Unusual localized field disturbance reported during routine monitoring. PKE Field Analyser readings subsequently confirmed elevated activity.</div></div>
+<div class="panel evidence"><h2>EVIDENCE</h2><div class="kv"><div class="k">RECORDS</div><div>04</div><div class="k">PKE SOURCE</div><div class="ok">IMPORTED / VERIFIED</div><div class="k">ATTACHMENTS</div><div>03 DATA SETS</div></div></div>
+</div>
+<div>
+<div class="panel"><h2>RESEARCH STATE</h2><div class="tags"><span class="tag awe">AWE</span><span class="tag">UNKNOWN SUBTYPE</span><span class="tag">UNRESOLVED</span></div><p class="mini">Classification remains provisional until field evidence is reviewed.</p></div>
+<div class="panel"><h2>OBSERVATIONS</h2><div class="list"><div class="row"><div>Field behaviour differs from baseline.</div><span class="ok">HIGH</span></div><div class="row"><div>Local environmental correlation detected.</div><span class="warn">MED</span></div></div></div>
+<div class="panel anomaly"><h2>ANOMALIES</h2><div class="list"><div class="row"><div>Transient spatial distortion</div><span class="err">OPEN</span></div><div class="row"><div>Repeated pulse at 14:26</div><span class="err">OPEN</span></div></div></div>
+</div>
+</div>
+</section>
+
+<section id="evidence" class="view"><div class="panel"><h2>EVIDENCE REGISTER</h2><div class="toolbar"><button class="primary" onclick="addEvidence()">+ Add Evidence</button></div><div id="evidenceList" class="list" style="margin-top:10px"></div></div></section>
+<section id="timeline" class="view"><div class="panel"><h2>CASE TIMELINE</h2><div class="timeline"><div class="event"><div class="time">14:12</div><b>Initial report</b><div class="mini">Unusual environmental disturbance recorded.</div></div><div class="event"><div class="time">14:18</div><b>PKE detection</b><div class="mini">Field analyser registered elevated activity.</div></div><div class="event"><div class="time">14:26</div><b>ANOMALY</b><div class="mini">Transient pulse detected; event behaviour changed.</div></div><div class="event"><div class="time">14:41</div><b>Research case opened</b><div class="mini">Event assigned AWE / unresolved.</div></div></div></div></section>
+<section id="analysis" class="view"><div class="grid"><div class="panel"><h2>ANALYSIS</h2><label>WORKING HYPOTHESIS</label><textarea rows="6" id="hypothesis">Possible localized altered-world event. Current evidence is insufficient to determine origin or mechanism.</textarea><div class="toolbar"><button class="primary" onclick="saveAnalysis()">Save Analysis</button></div></div><div class="panel"><h2>CLASSIFICATION</h2><label>CASE TYPE</label><select id="analysisType"><option>AWE — Altered World Event</option><option>RP — Residual Phenomenon</option><option>PKE — Psychokinetic Event</option><option>EM — Entity Manifestation</option><option>AE — Anomalous Entity</option><option>EE — Ectoplasmic Event</option><option>LA — Location Anomaly</option><option>TA — Temporal Anomaly</option><option>EA — Environmental Anomaly</option></select><label>CLASSIFICATION</label><select><option>UNRESOLVED</option><option>PROVISIONAL</option><option>INSUFFICIENT DATA</option><option>CONFLICTING DATA</option><option>REQUIRES FIELD INVESTIGATION</option><option>MODEL FAILURE</option></select></div></div></section>
+<section id="notes" class="view"><div class="panel"><h2>RESEARCH NOTES</h2><textarea rows="14" id="notesText">Investigation remains open. Compare imported PKE traces against environmental observations and previous Portsmouth cases.</textarea><div class="toolbar"><button class="primary" onclick="saveNotes()">Save Notes</button></div></div></section>
+
+<section id="newcase" class="view">
+<div class="panel"><h2>NEW CASE / CASE TYPE</h2><div class="mini">Every case follows the same structure. Operational response and research classification are separate fields.</div>
+<label>CASE ID</label><input id="newid" value="SE-0262">
+<label>LOCATION</label><input id="newloc" value="Portsmouth, Hampshire">
+<label>INVESTIGATION SITE</label><input id="newsite" placeholder="Enter site">
+<label>DATE / TIME</label><input id="newdate" type="datetime-local">
+<label>RESPONSE TYPE</label><select><option>SPECIAL EVENT RESPONSE</option><option>ENTITY INVESTIGATION</option><option>SITE INVESTIGATION</option><option>PARANORMAL ACTIVITY RESPONSE</option></select>
+<label>CASE TYPE</label>
+<div class="typegrid" id="typegrid">
+<button onclick="pickType(this,'AWE — ALTERED WORLD EVENT')">AWE<br><span class="mini">Altered World Event</span></button>
+<button onclick="pickType(this,'RP — RESIDUAL PHENOMENON')">RP<br><span class="mini">Residual Phenomenon</span></button>
+<button onclick="pickType(this,'PKE — PSYCHOKINETIC EVENT')">PKE<br><span class="mini">Psychokinetic Event</span></button>
+<button onclick="pickType(this,'EM — ENTITY MANIFESTATION')">EM<br><span class="mini">Entity Manifestation</span></button>
+<button onclick="pickType(this,'AE — ANOMALOUS ENTITY')">AE<br><span class="mini">Anomalous Entity</span></button>
+<button onclick="pickType(this,'EE — ECTOPLASMIC EVENT')">EE<br><span class="mini">Ectoplasmic Event</span></button>
+<button onclick="pickType(this,'LA — LOCATION ANOMALY')">LA<br><span class="mini">Location Anomaly</span></button>
+<button onclick="pickType(this,'TA — TEMPORAL ANOMALY')">TA<br><span class="mini">Temporal Anomaly</span></button>
+<button onclick="pickType(this,'EA — ENVIRONMENTAL ANOMALY')">EA<br><span class="mini">Environmental Anomaly</span></button>
+</div>
+<label>SUBTYPE</label><input id="newsub" value="UNKNOWN">
+<label>INITIAL CLASSIFICATION</label><select><option>UNRESOLVED</option><option>PROVISIONAL</option><option>INSUFFICIENT DATA</option><option>CONFLICTING DATA</option><option>REQUIRES FIELD INVESTIGATION</option><option>MODEL FAILURE</option></select>
+<label>INITIAL OBSERVATION</label><textarea id="newobs" rows="4" placeholder="What was observed?"></textarea>
+<div class="toolbar"><button class="primary" onclick="createCase()">Create Case</button><button onclick="show('cases')">Cancel</button></div>
 </div></section>
 
-<section class="panel tab case"><h2>CASE SUMMARY</h2><div class="pad"><div class="list">
-<div class="row"><span>EVIDENCE RECORDS</span><b class="yellow">04</b></div><div class="row"><span>OBSERVATIONS</span><b class="green">07</b></div><div class="row"><span>ANOMALIES</span><b class="red">02</b></div><div class="row"><span>FIELD REPORTS</span><b>01</b></div>
-</div><p class="small">SER does not perform primary spectral measurement. Imported PKE readings remain evidence associated with this case.</p></div></section>
-
-<section class="panel tab case"><h2>EVENT TIMELINE</h2><div class="pad timeline">
-<div class="event"><div class="time">21:43:12</div>Initial anomalous activity detected.</div><div class="event"><div class="time">21:46:08</div>Activity increased beyond expected baseline.</div><div class="event"><div class="time">21:51:44</div>Unusual decay behaviour recorded.</div><div class="event"><div class="time">22:00:44</div>Event activity reduced; investigation remains open.</div>
-</div></section>
-
-<section class="panel tab case"><h2>RESEARCH STATE</h2><div class="pad"><div class="grid">
-<div class="cell"><div class="label">PRIMARY PHENOMENON</div><div class="value">UNKNOWN</div></div><div class="cell"><div class="label">CONFIDENCE</div><div class="value">LOW</div></div>
-<div class="cell"><div class="label">ANOMALY STATUS</div><div class="value red">2 UNRESOLVED</div></div><div class="cell"><div class="label">FIELD VERIFICATION</div><div class="value yellow">REQUIRED</div></div>
-</div></div></section>
-
-<section class="panel tab evidence hidden"><h2>EVIDENCE</h2><div class="pad"><div class="list">
-<div class="row"><span>EVIDENCE #001 / PKE FIELD ANALYSER</span><span class="yellow">IMPORTED</span></div><div class="row"><span>EVIDENCE #002 / FIELD OBSERVATION</span><span class="green">VERIFIED</span></div><div class="row"><span>EVIDENCE #003 / ENVIRONMENTAL</span><span>UNCONFIRMED</span></div><div class="row"><span>EVIDENCE #004 / PKE FIELD ANALYSER</span><span class="red">ANOMALOUS</span></div>
-</div></div></section>
-
-<section class="panel tab timeline hidden"><h2>FULL TIMELINE</h2><div class="pad timeline">
-<div class="event"><div class="time">21:43:12</div>Initial detection.</div><div class="event"><div class="time">21:44:31</div>PKE evidence record created.</div><div class="event"><div class="time">21:46:08</div>Activity increase noted.</div><div class="event"><div class="time">21:51:44</div>Decay anomaly identified.</div><div class="event"><div class="time">22:00:44</div>Event activity reduced.</div>
-</div></section>
-
-<section class="panel tab analysis hidden"><h2>ANALYSIS</h2><div class="pad"><div class="label">CURRENT WORKING ASSESSMENT</div><p>Available evidence does not currently support a confirmed classification.</p>
-<div class="row"><span>HYPOTHESIS A</span><span class="yellow">LOW CONFIDENCE</span></div><div class="row"><span>HYPOTHESIS B</span><span class="yellow">LOW CONFIDENCE</span></div><div class="row"><span>MODEL STATUS</span><span class="red">INCOMPLETE</span></div></div></section>
-
-<section class="panel tab notes hidden"><h2>RESEARCH NOTES</h2><div class="pad"><div class="row"><span>NOTE 001</span><span>21:47 / FIELD RESEARCHER</span></div><p class="small">Observed activity appears intermittent rather than continuously sustained. Further field evidence required.</p><button onclick="alert('New research note placeholder.')">ADD NOTE</button></div></section>
-</main>
-<footer><span>SER / SPECIAL EVENT RESEARCH</span><span>LOCAL CASE FILE / STAGE 01</span></footer>
+<div class="footer">SER TEST BUILD // CASE DATA IS LOCAL TO THIS DEMONSTRATION</div>
 </div>
 <script>
-const buttons=[...document.querySelectorAll('nav button')],tabs=[...document.querySelectorAll('.tab')];
-buttons.forEach(b=>b.onclick=()=>{buttons.forEach(x=>x.classList.remove('active'));b.classList.add('active');tabs.forEach(t=>t.classList.toggle('hidden',!t.classList.contains(b.dataset.tab)))});
+let selectedType='AWE — ALTERED WORLD EVENT';
+const demos={
+'SE-0261':{id:'SE-0261',loc:'Portsmouth, Hampshire',type:'AWE — ALTERED WORLD EVENT',sub:'UNKNOWN',cls:'UNRESOLVED',obs:'Unusual localized field disturbance reported during routine monitoring. PKE Field Analyser readings subsequently confirmed elevated activity.'},
+'SE-1977':{id:'HIST-ENFIELD',loc:'Enfield, London',type:'PKE — PSYCHOKINETIC EVENT',sub:'POLTERGEIST',cls:'HISTORICAL / DISPUTED',obs:'Historical reports describe alleged unexplained disturbances. SER records the case as a research subject; reported phenomena are not treated as established fact.'}
+};
+function show(id,btn){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById(id).classList.add('active');if(btn){document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}}
+function loadDemo(id){let c=demos[id];if(!c)return;document.getElementById('caseid').textContent=c.id;document.getElementById('location').textContent=c.loc;document.getElementById('ctype').textContent=c.type;document.getElementById('subtype').textContent=c.sub;document.getElementById('classif').textContent=c.cls;document.getElementById('obstext').textContent=c.obs;show('overview')}
+function pickType(el,type){selectedType=type;document.querySelectorAll('#typegrid button').forEach(b=>b.classList.remove('selected'));el.classList.add('selected')}
+function createCase(){let id=document.getElementById('newid').value||'SE-NEW';let loc=document.getElementById('newloc').value||'UNSPECIFIED';let sub=document.getElementById('newsub').value||'UNKNOWN';document.getElementById('caseid').textContent=id;document.getElementById('location').textContent=loc;document.getElementById('ctype').textContent=selectedType;document.getElementById('subtype').textContent=sub;document.getElementById('classif').textContent='UNRESOLVED';document.getElementById('obstext').textContent=document.getElementById('newobs').value||'No initial observation entered.';show('overview')}
+function addEvidence(){let n=document.querySelectorAll('#evidenceList .row').length+1;let d=document.createElement('div');d.className='row evidence';d.innerHTML='<div><b>EVIDENCE RECORD #00'+n+'</b><div class="mini">SOURCE: PKE FIELD ANALYSER / IMPORTED DATA SET</div></div><span class="ok">VERIFIED</span>';document.getElementById('evidenceList').appendChild(d)}
+function saveAnalysis(){alert('Analysis saved locally for this test case.')}
+function saveNotes(){alert('Research notes saved locally for this test case.')}
+addEvidence();addEvidence();
 </script>
 </body></html>
